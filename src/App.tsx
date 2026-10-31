@@ -6,9 +6,11 @@ import { CartModal } from './components/CartModal';
 import { CategoryScroll, type ActiveCategory } from './components/CategoryScroll';
 import { Header } from './components/Header';
 import { MenuCard } from './components/MenuCard';
+import { Modal } from './components/Modal';
 import { ProfileModal } from './components/ProfileModal';
 import { useAuth } from './hooks/useAuth';
 import { useMenu } from './hooks/useMenu';
+import { useShop } from './hooks/useShop';
 import { cartTotals } from './lib/cart';
 import { loadCart, loadIntent, saveCart, saveIntent } from './lib/persist';
 import { supabaseConfigured } from './lib/supabase';
@@ -19,12 +21,24 @@ type Dialog = 'none' | 'auth' | 'profile' | 'cart' | 'adminAuth' | 'admin';
 export default function App() {
   const auth = useAuth();
   const menu = useMenu();
+  const shop = useShop();
+  const closed = !shop.isOpen;
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
   const [category, setCategory] = useState<ActiveCategory>('All');
   // Google sign-in reloads the page: restore the cart and the dialog the user was heading to.
   const [cart, setCart] = useState<Cart>(loadCart);
   const [dialog, setDialog] = useState<Dialog>(() => loadIntent() ?? 'none');
 
   useEffect(() => saveCart(cart), [cart]);
+
+  // Show the "shop closed" notice again whenever the owner closes the shop (or changes the note).
+  useEffect(() => {
+    if (closed) setNoticeDismissed(false);
+  }, [closed, shop.note]);
+  // Nobody can stay in checkout once the shop closes; the saved cart is kept.
+  useEffect(() => {
+    if (closed && dialog === 'cart') setDialog('none');
+  }, [closed, dialog]);
   useEffect(() => saveIntent(dialog === 'auth' || dialog === 'adminAuth' ? dialog : null), [dialog]);
 
   const visible = useMemo(
@@ -56,6 +70,7 @@ export default function App() {
 
   // Checkout gate: must be logged in, then must have name + phone on file.
   const startCheckout = () => {
+    if (closed) return setNoticeDismissed(false);
     if (!auth.session) return setDialog('auth');
     if (!auth.profileComplete) return setDialog('profile');
     setDialog('cart');
@@ -84,9 +99,12 @@ export default function App() {
       <Header onOpenAuth={() => setDialog('auth')} />
       <CategoryScroll active={category} onChange={setCategory} />
 
-      <main className="menu-container">
+      <main className={`menu-container ${closed ? 'shop-closed' : ''}`}>
         {!supabaseConfigured && (
           <div className="pincode-fixed-badge">⚠️ Supabase env vars missing — set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.</div>
+        )}
+        {closed && (
+          <div className="shop-closed-banner">🔴 શોપ હજી ખુલી નથી{shop.note ? ` — ${shop.note}` : ''}</div>
         )}
         {menu.error && <div className="pincode-fixed-badge">⚠️ મેનૂ લોડ થઈ શક્યું નથી: {menu.error}</div>}
         {menu.loading && <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>લોડ થઈ રહ્યું છે...</div>}
@@ -95,7 +113,15 @@ export default function App() {
         ))}
       </main>
 
-      <CartBar items={cartCount} total={subtotal} onOpen={startCheckout} />
+      <CartBar items={cartCount} total={subtotal} onOpen={startCheckout} disabled={closed} />
+
+      <Modal open={closed && !noticeDismissed && dialog === 'none'} title="🔴 શોપ હજી ખુલી નથી" onClose={() => setNoticeDismissed(true)}>
+        <div style={{ fontSize: '0.9rem' }}>
+          અમે હાલમાં ઓર્ડર લઈ રહ્યા નથી. તમે મેનૂ જોઈ શકો છો, પણ શોપ ખુલે ત્યાં સુધી ઓર્ડર આપી શકશો નહીં.
+        </div>
+        {shop.note && <div style={{ fontWeight: 700, color: 'var(--gold-primary)' }}>{shop.note}</div>}
+        <button className="btn-primary-action" onClick={() => setNoticeDismissed(true)}>મેનૂ જુઓ</button>
+      </Modal>
 
       <AuthModal open={dialog === 'auth'} onClose={() => setDialog('none')} />
       <ProfileModal
@@ -117,7 +143,7 @@ export default function App() {
         onClose={() => setDialog('none')}
         title="માલિક એક્સેસ (Admin Login)"
       />
-      <AdminModal open={dialog === 'admin'} onClose={() => setDialog('none')} items={menu.items} reload={menu.reload} />
+      <AdminModal open={dialog === 'admin'} onClose={() => setDialog('none')} items={menu.items} reload={menu.reload} shop={shop} />
 
       <footer>
         <p>© 2026 NIGHT EATS - PURE VEG BURGER CAFÉ</p>
