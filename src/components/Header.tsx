@@ -1,6 +1,6 @@
 import { useAuth } from '../hooks/useAuth';
 
-export function Header({ onOpenAuth }: { onOpenAuth: () => void }) {
+export function Header({ onOpenAuth, onOpenOrders }: { onOpenAuth: () => void; onOpenOrders: () => void }) {
   const { session, profile, signOut } = useAuth();
   return (
     <>
@@ -22,6 +22,9 @@ export function Header({ onOpenAuth }: { onOpenAuth: () => void }) {
         {session ? (
           <>
             👤 {profile?.name ?? session.user.email}{' '}
+            <span style={{ color: 'var(--gold-primary)', cursor: 'pointer' }} onClick={onOpenOrders}>
+              | મારા ઓર્ડર
+            </span>{' '}
             <span style={{ color: 'var(--gold-primary)', cursor: 'pointer' }} onClick={() => void signOut()}>
               | લૉગઆઉટ
             </span>
