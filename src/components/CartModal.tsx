@@ -3,7 +3,6 @@ import { Modal } from './Modal';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { bogoDiscount, cartTotals } from '../lib/cart';
-import { buildWhatsAppUrl } from '../lib/whatsapp';
 import type { Cart, PlacedOrder } from '../types';
 
 interface Props {
@@ -23,10 +22,16 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
   const [bogo, setBogo] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [busy, setBusy] = useState(false);
+  const [placed, setPlaced] = useState<{ order: PlacedOrder; address: string } | null>(null);
 
   const { items, subtotal, unitPrices } = cartTotals(cart);
   const discount = bogoDiscount(unitPrices, bogo);
   const final = Math.max(0, subtotal - discount);
+
+  // Forget the confirmation once the modal is closed by any route.
+  useEffect(() => {
+    if (!open) setPlaced(null);
+  }, [open]);
 
   // BOGO needs >= 2 units; drop it if the cart shrinks below that.
   useEffect(() => {
@@ -51,8 +56,6 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
 
   const placeOrder = async () => {
     if (!address.trim()) return alert('કૃપા કરીને નામ અને વાસણાનું પૂરું સરનામું દાખલ કરો!');
-    // Open the tab synchronously (before awaiting) so mobile popup blockers allow it.
-    const tab = window.open('', '_blank');
     setBusy(true);
     const { data, error } = await supabase.rpc('place_order', {
       p_items: Object.values(cart).map((l) => ({ menu_item_id: l.itemId, variant: l.variant, qty: l.qty })),
@@ -62,22 +65,57 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
     setBusy(false);
     const order = (Array.isArray(data) ? data[0] : data) as PlacedOrder | undefined;
     if (error || !order) {
-      tab?.close();
       if (error?.message.includes('BOGO1ST already used')) setBogo(false);
       return alert(error?.message === 'shop closed' ? 'શોપ હમણાં બંધ છે. કૃપા કરીને પછી પ્રયાસ કરો.' : (error?.message ?? 'ઓર્ડર નિષ્ફળ ગયો. ફરી પ્રયાસ કરો.'));
     }
-    const url = buildWhatsAppUrl(order, address.trim());
-    if (tab) tab.location.href = url;
-    else window.location.href = url;
+    setPlaced({ order, address: address.trim() });
     setAddress('');
     setBogo(false);
     setFeedback(null);
     onOrdered();
+  };
+
+  const close = () => {
+    setPlaced(null);
     onClose();
   };
 
+  if (placed) {
+    const { order, address: addr } = placed;
+    return (
+      <Modal open={open} title="✅ ઓર્ડર મળી ગયો!" onClose={close}>
+        <div style={{ textAlign: 'center', fontSize: '0.9rem' }}>
+          ઓર્ડર નંબર <b style={{ color: 'var(--gold-primary)', fontSize: '1.1rem' }}>#{order.order_id}</b>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: 4 }}>
+            અમે તમારો ઓર્ડર તૈયાર કરવાનું શરૂ કરીએ છીએ. જરૂર પડે તો અમે તમને ફોન કરીશું.
+          </div>
+        </div>
+        <ul className="order-lines">
+          {order.lines.map((l, i) => (
+            <li key={i}>{l.name} × {l.qty} = ₹{l.unit_price * l.qty}</li>
+          ))}
+        </ul>
+        <div style={{ background: 'var(--bg-elevated)', padding: 12, borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.85rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>સબટોટલ:</span><span>₹{order.subtotal}</span></div>
+          {order.discount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success)' }}><span>BOGO ડિસ્કાઉન્ટ:</span><span>-₹{order.discount}</span></div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: 'var(--gold-primary)', borderTop: '1px dashed var(--border-subtle)', paddingTop: 6 }}>
+            <span>કુલ ચૂકવવાપાત્ર (COD):</span><span>₹{order.total}</span>
+          </div>
+        </div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+          📍 {addr}, વાસણા (380007)<br />
+          📞 {order.customer_name} · {order.customer_phone}<br />
+          💵 પેમેન્ટ: Cash on Delivery / UPI on Delivery
+        </div>
+        <button className="btn-primary-action" onClick={close}>બરાબર</button>
+      </Modal>
+    );
+  }
+
   return (
-    <Modal open={open} title="ઓર્ડર વિગતો (Your Cart)" onClose={onClose}>
+    <Modal open={open} title="ઓર્ડર વિગતો (Your Cart)" onClose={close}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {Object.values(cart).map((l) => (
           <div className="cart-item-row" key={l.key}>
@@ -146,7 +184,7 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
       </div>
 
       <button className="btn-primary-action" disabled={busy || items === 0} onClick={() => void placeOrder()}>
-        💬 WhatsApp પર ઓર્ડર કન્ફર્મ કરો
+        ઓર્ડર કન્ફર્મ કરો
       </button>
     </Modal>
   );
