@@ -12,8 +12,6 @@ interface AuthState {
   ready: boolean;
   profileComplete: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithEmail: (email: string, password: string) => Promise<string | null>;
-  signUpWithEmail: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
   saveProfile: (name: string, phone: string) => Promise<string | null>;
 }
@@ -69,20 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         provider: 'google',
         options: { redirectTo: window.location.origin },
       });
-    },
-    signInWithEmail: async (email, password) => {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return error?.message ?? null;
-    },
-    signUpWithEmail: async (email, password) => {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: window.location.origin },
-      });
-      if (error) return error.message;
-      // With "Confirm email" enabled there is no session until the link is clicked.
-      return data.session ? null : 'CONFIRM_EMAIL';
     },
     signOut: async () => {
       await supabase.auth.signOut();
