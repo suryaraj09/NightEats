@@ -10,6 +10,7 @@ import { ProfileModal } from './components/ProfileModal';
 import { useAuth } from './hooks/useAuth';
 import { useMenu } from './hooks/useMenu';
 import { cartTotals } from './lib/cart';
+import { loadCart, loadIntent, saveCart, saveIntent } from './lib/persist';
 import { supabaseConfigured } from './lib/supabase';
 import type { Cart, MenuItem, Variant } from './types';
 
@@ -19,8 +20,12 @@ export default function App() {
   const auth = useAuth();
   const menu = useMenu();
   const [category, setCategory] = useState<ActiveCategory>('All');
-  const [cart, setCart] = useState<Cart>({});
-  const [dialog, setDialog] = useState<Dialog>('none');
+  // Google sign-in reloads the page: restore the cart and the dialog the user was heading to.
+  const [cart, setCart] = useState<Cart>(loadCart);
+  const [dialog, setDialog] = useState<Dialog>(() => loadIntent() ?? 'none');
+
+  useEffect(() => saveCart(cart), [cart]);
+  useEffect(() => saveIntent(dialog === 'auth' || dialog === 'adminAuth' ? dialog : null), [dialog]);
 
   const visible = useMemo(
     () => (category === 'All' ? menu.items : menu.items.filter((i) => i.category === category)),
