@@ -38,3 +38,20 @@ export interface PlacedOrder {
   total: number;
   lines: { name: string; unit_price: number; qty: number }[];
 }
+
+export type OrderStatus = 'new' | 'confirmed' | 'delivered' | 'cancelled';
+
+export interface OrderRow {
+  id: number;
+  customer_name: string;
+  customer_phone: string;
+  address: string;
+  pincode: string;
+  subtotal: number;
+  discount: number;
+  total: number;
+  bogo_applied: boolean;
+  status: OrderStatus;
+  created_at: string;
+  order_items: { id: number; name: string; unit_price: number; qty: number }[];
+}

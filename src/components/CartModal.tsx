@@ -64,7 +64,7 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
     if (error || !order) {
       tab?.close();
       if (error?.message.includes('BOGO1ST already used')) setBogo(false);
-      return alert(error?.message ?? 'ઓર્ડર નિષ્ફળ ગયો. ફરી પ્રયાસ કરો.');
+      return alert(error?.message === 'shop closed' ? 'શોપ હમણાં બંધ છે. કૃપા કરીને પછી પ્રયાસ કરો.' : (error?.message ?? 'ઓર્ડર નિષ્ફળ ગયો. ફરી પ્રયાસ કરો.'));
     }
     const url = buildWhatsAppUrl(order, address.trim());
     if (tab) tab.location.href = url;

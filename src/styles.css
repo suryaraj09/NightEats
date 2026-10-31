@@ -539,3 +539,101 @@ footer {
     margin-top: 6px;
     font-weight: 600;
 }
+
+/* ---- shop open/closed ---- */
+.shop-closed-banner {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid var(--danger);
+    color: var(--text-main);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+}
+.menu-container.shop-closed .menu-card {
+    opacity: 0.4;
+    filter: grayscale(0.7);
+    pointer-events: none;
+}
+.btn-view-cart:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ---- admin: shop switch, tabs, orders ---- */
+.shop-switch {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--success);
+}
+.shop-switch.closed { border-color: var(--danger); }
+
+.admin-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border-subtle); }
+.admin-tabs button {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 8px 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+.admin-tabs button.active { color: var(--gold-primary); border-bottom-color: var(--gold-primary); }
+.tab-badge {
+    display: inline-block;
+    min-width: 18px;
+    padding: 0 6px;
+    border-radius: 9px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 0.7rem;
+    text-align: center;
+    animation: badge-pulse 1.4s ease-in-out infinite;
+}
+@keyframes badge-pulse { 50% { transform: scale(1.2); } }
+
+.order-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.order-filter {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+.order-filter.active { border-color: var(--gold-primary); color: var(--gold-primary); }
+
+.order-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.order-card.is-new { border-color: var(--gold-primary); box-shadow: 0 0 0 1px var(--gold-glow); }
+.order-head { display: flex; justify-content: space-between; align-items: center; }
+.order-status { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+.order-status.s-new { background: var(--gold-primary); color: #000; }
+.order-status.s-confirmed { background: #1d4ed8; color: #fff; }
+.order-status.s-delivered { background: #15803d; color: #fff; }
+.order-status.s-cancelled { background: #b91c1c; color: #fff; }
+.order-lines { margin: 6px 0; padding-left: 18px; font-size: 0.8rem; }
+.order-bogo { color: var(--success); font-size: 0.75rem; font-weight: 600; }
+.order-action {
+    flex: 1;
+    padding: 7px;
+    border-radius: 8px;
+    border: 1px solid var(--gold-primary);
+    background: transparent;
+    color: var(--gold-primary);
+    font-weight: 700;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+.order-action.danger { border-color: var(--danger); color: var(--danger); }
