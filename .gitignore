@@ -1,0 +1,12 @@
+node_modules
+dist
+*.log
+*.tsbuildinfo
+
+# env files: never commit real values, but keep the template
+.env*
+!.env.example
+
+# local tool state
+.vercel
+supabase/.temp
