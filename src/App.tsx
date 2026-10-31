@@ -6,6 +6,7 @@ import { CartModal } from './components/CartModal';
 import { CategoryScroll, type ActiveCategory } from './components/CategoryScroll';
 import { Header } from './components/Header';
 import { MenuCard } from './components/MenuCard';
+import { MyOrdersModal } from './components/MyOrdersModal';
 import { Modal } from './components/Modal';
 import { ProfileModal } from './components/ProfileModal';
 import { useAuth } from './hooks/useAuth';
@@ -16,7 +17,7 @@ import { loadCart, loadIntent, saveCart, saveIntent } from './lib/persist';
 import { supabaseConfigured } from './lib/supabase';
 import type { Cart, MenuItem, Variant } from './types';
 
-type Dialog = 'none' | 'auth' | 'profile' | 'cart' | 'adminAuth' | 'admin';
+type Dialog = 'none' | 'auth' | 'profile' | 'cart' | 'adminAuth' | 'admin' | 'myOrders';
 
 export default function App() {
   const auth = useAuth();
@@ -96,7 +97,7 @@ export default function App() {
 
   return (
     <>
-      <Header onOpenAuth={() => setDialog('auth')} />
+      <Header onOpenAuth={() => setDialog('auth')} onOpenOrders={() => setDialog('myOrders')} />
       <CategoryScroll active={category} onChange={setCategory} />
 
       <main className={`menu-container ${closed ? 'shop-closed' : ''}`}>
@@ -124,6 +125,7 @@ export default function App() {
       </Modal>
 
       <AuthModal open={dialog === 'auth'} onClose={() => setDialog('none')} />
+      <MyOrdersModal open={dialog === 'myOrders'} onClose={() => setDialog('none')} />
       <ProfileModal
         open={dialog === 'profile'}
         onClose={() => setDialog('none')}
