@@ -1,0 +1,121 @@
+import { useState } from 'react';
+import { Modal } from './Modal';
+import { supabase } from '../lib/supabase';
+import type { Category, MenuItem } from '../types';
+
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  items: MenuItem[];
+  reload: () => Promise<void>;
+}
+
+const CATEGORIES: { value: Category; label: string }[] = [
+  { value: 'Burger', label: 'Burger' },
+  { value: 'Sandwich', label: 'Sandwich' },
+  { value: 'Tikka Pav', label: 'Tikka Pav' },
+  { value: 'Fries', label: 'French Fries' },
+];
+
+export function AdminModal({ open, onClose, items, reload }: Props) {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState<Category>('Burger');
+  const [price, setPrice] = useState('');
+  const [cheesePrice, setCheesePrice] = useState('');
+
+  const run = async (p: PromiseLike<{ error: { message: string } | null }>) => {
+    const { error } = await p;
+    if (error) alert(error.message);
+    else await reload();
+    return !error;
+  };
+
+  const add = async () => {
+    const priceNum = parseInt(price, 10);
+    if (!name.trim() || Number.isNaN(priceNum)) return alert('કૃપા કરીને વાનગીનું નામ અને સાચો ભાવ દાખલ કરો!');
+    const ok = await run(
+      supabase.from('menu_items').insert({
+        name: name.trim(),
+        category,
+        price: priceNum,
+        cheese_price: parseInt(cheesePrice, 10) || null,
+        description: 'Night Eats Special Fresh Preparation',
+        sort_order: (items.length ? Math.max(...items.map((i) => i.id)) : 0) + 1000,
+      }),
+    );
+    if (ok) {
+      setName(''); setPrice(''); setCheesePrice('');
+      alert('નવી વાનગી સફળતાપૂર્વક ઉમેરાઈ ગઈ છે!');
+    }
+  };
+
+  const toggle = (i: MenuItem) => run(supabase.from('menu_items').update({ in_stock: !i.inStock }).eq('id', i.id));
+  const remove = (i: MenuItem) => {
+    if (confirm('શું તમે આ વાનગીને લાઈવ મેનૂમાંથી કાયમ માટે કાઢી નાખવા માંગો છો?'))
+      void run(supabase.from('menu_items').delete().eq('id', i.id));
+  };
+  const reset = () => {
+    if (confirm('શું તમે ઓરિજિનલ મેનૂ ફરીથી રીસ્ટોર કરવા માંગો છો?')) void run(supabase.rpc('reset_menu'));
+  };
+
+  return (
+    <Modal open={open} title="લાઇવ ક્લાઉડ મેનેજમેન્ટ (Night Eats)" onClose={onClose} sheetStyle={{ maxHeight: '95vh' }}>
+      <h4 style={{ color: 'var(--gold-primary)', fontSize: '0.9rem' }}>+ નવી આઇટમ ઉમેરો</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div className="input-group">
+          <label>વાનગીનું નામ</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="દા.ત. Peri Peri Burger" />
+        </div>
+        <div className="input-group">
+          <label>કેટેગરી</label>
+          <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
+            {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </div>
+        <div className="input-group">
+          <label>ભાવ (₹)</label>
+          <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="દા.ત. 120" />
+        </div>
+        <div className="input-group">
+          <label>ડબલ ચીઝ ભાવ (વૈકલ્પિક)</label>
+          <input type="number" value={cheesePrice} onChange={(e) => setCheesePrice(e.target.value)} placeholder="દા.ત. 140" />
+        </div>
+      </div>
+      <button className="btn-primary-action" style={{ padding: 8 }} onClick={() => void add()}>લાઇવ મેનૂમાં ઉમેરો</button>
+
+      <hr style={{ border: 0, borderTop: '1px solid var(--border-subtle)', margin: '10px 0' }} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h4 style={{ color: 'var(--gold-primary)', fontSize: '0.9rem' }}>લાઇવ સ્ટોક કંટ્રોલ (ક્લાઉડ સિન્ક)</h4>
+        <button
+          style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '4px 8px', borderRadius: 6, fontSize: '0.7rem', cursor: 'pointer' }}
+          onClick={reset}
+        >
+          મૂળ મેનૂ રીસ્ટોર
+        </button>
+      </div>
+
+      <div style={{ maxHeight: 350, overflowY: 'auto' }}>
+        <table className="admin-table">
+          <thead>
+            <tr><th>વાનગી</th><th>ભાવ</th><th>લાઈવ સ્ટોક</th><th>કાઢી નાખો</th></tr>
+          </thead>
+          <tbody>
+            {items.map((i) => (
+              <tr key={i.id}>
+                <td><b>{i.name}</b><br /><small style={{ color: 'var(--text-muted)' }}>{i.category}</small></td>
+                <td>₹{i.price} {i.cheesePrice ? `/ ₹${i.cheesePrice}` : ''}</td>
+                <td>
+                  <button className={`btn-toggle-stock ${i.inStock ? 'instock' : 'outstock'}`} onClick={() => void toggle(i)}>
+                    {i.inStock ? 'In Stock' : 'Out'}
+                  </button>
+                </td>
+                <td><button className="btn-del-item" onClick={() => remove(i)}>🗑️</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Modal>
+  );
+}

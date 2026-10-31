@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Night Eats - Pure Veg Burger Café</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #0a0c10;
+            --bg-card: #141820;
+            --bg-elevated: #1d222d;
+            --gold-primary: #d4af37;
+            --gold-light: #f3e5ab;
+            --gold-glow: rgba(212, 175, 55, 0.25);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-subtle: #2d3748;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --veg-green: #15803d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 90px;
+        }
+
+        header {
+            background: linear-gradient(180deg, #11141c 0%, var(--bg-deep) 100%);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(10px);
+        }
+
+        .brand-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #252e3d 0%, #0d1117 100%);
+            border: 2px solid var(--gold-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px var(--gold-glow);
+            font-size: 24px;
+        }
+
+        .brand-title {
+            font-family: 'Cinzel', serif;
+            font-weight: 800;
+            font-size: 1.15rem;
+            color: var(--gold-primary);
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+        }
+
+        .brand-sub {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .call-btn-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-primary);
+            padding: 8px 12px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .banner-strip {
+            background: linear-gradient(90deg, #1f2735 0%, #2f2214 50%, #1f2735 100%);
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 10px 16px;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--gold-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .banner-strip .badge-bogo {
+            background: var(--gold-primary);
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .category-scroll {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 14px 16px;
+            background: var(--bg-deep);
+            scrollbar-width: none;
+            position: sticky;
+            top: 81px;
+            z-index: 40;
+        }
+        .category-scroll::-webkit-scrollbar { display: none; }
+
+        .cat-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 24px;
+            font-size: 0.82rem;
+            white-space: nowrap;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .cat-chip.active {
+            background: var(--gold-primary);
+            color: #000;
+            font-weight: 600;
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 10px var(--gold-glow);
+        }
+
+        .menu-container {
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .menu-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .menu-card.out-of-stock {
+            opacity: 0.55;
+            filter: grayscale(0.4);
+            border-color: #3f1d1d;
+        }
+
+        .item-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .veg-icon {
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid var(--veg-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            margin-bottom: 4px;
+        }
+        .veg-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--veg-green);
+            border-radius: 50%;
+        }
+
+        .item-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .item-desc {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+
+        .item-pricing {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--gold-primary);
+            margin-top: 6px;
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-subtle);
+        }
+
+        .btn-add-item {
+            background: transparent;
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-primary);
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-add-item:hover {
+            background: var(--gold-primary);
+            color: #000;
+        }
+
+        .qty-control {
+            display: flex;
+            align-items: center;
+            background: var(--bg-elevated);
+            border: 1px solid var(--gold-primary);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .qty-btn {
+            background: transparent;
+            border: none;
+            color: var(--gold-primary);
+            width: 34px;
+            height: 34px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .qty-val {
+            width: 32px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .cart-sticky-bar {
+            position: fixed;
+            bottom: 14px;
+            left: 16px;
+            right: 16px;
+            max-width: 568px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #1d2330 0%, #11141c 100%);
+            border: 1.5px solid var(--gold-primary);
+            border-radius: 16px;
+            padding: 12px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 60;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), 0 0 15px var(--gold-glow);
+            transform: translateY(150%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .cart-sticky-bar.visible {
+            transform: translateY(0);
+        }
+
+        .cart-summary-text .cart-qty-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .cart-summary-text .cart-total-info {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--gold-primary);
+        }
+
+        .btn-view-cart {
+            background: var(--gold-primary);
+            color: #000;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: flex-end;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-sheet {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.7);
+        }
+
+        .modal-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.1rem;
+            color: var(--gold-primary);
+            font-family: 'Cinzel', serif;
+        }
+
+        .btn-close-modal {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .cart-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--border-subtle);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .input-group input, .input-group textarea, .input-group select {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .input-group input:focus, .input-group textarea:focus {
+            border-color: var(--gold-primary);
+        }
+
+        .pin-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .pin-wrapper input {
+            width: 100%;
+            padding-right: 44px;
+        }
+
+        .pin-toggle-btn {
+            position: absolute;
+            right: 8px;
+            background: transparent;
+            border: none;
+            color: var(--gold-primary);
+            cursor: pointer;
+            padding: 6px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pincode-fixed-badge {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary-action {
+            background: var(--gold-primary);
+            color: #000;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .bogo-card {
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px dashed var(--gold-primary);
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .admin-table th, .admin-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--border-subtle);
+            text-align: left;
+        }
+
+        .admin-table th {
+            color: var(--gold-primary);
+        }
+
+        .btn-toggle-stock {
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-toggle-stock.instock {
+            background: #15803d;
+            color: #fff;
+        }
+        .btn-toggle-stock.outstock {
+            background: #b91c1c;
+            color: #fff;
+        }
+
+        .btn-del-item {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px 16px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-subtle);
+            margin-top: 30px;
+        }
+
+        .admin-link {
+            color: var(--gold-primary);
+            text-decoration: underline;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-wrapper">
+            <div class="brand-logo-badge">🦉</div>
+            <div>
+                <div class="brand-title">NIGHT EATS</div>
+                <div class="brand-sub">Pure Veg Burger Café</div>
+            </div>
+        </div>
+        <a href="tel:7202806140" class="call-btn-header">
+            📞 7202806140
+        </a>
+    </header>
+
+    <div class="banner-strip">
+        <span class="badge-bogo">BOGO OFFER</span>
+        <span>પહેલા ઓર્ડર પર BUY 1 GET 1 FREE! (Code: <b>BOGO1ST</b>)</span>
+    </div>
+
+    <div class="category-scroll" id="catScroll">
+        <div class="cat-chip active" onclick="filterCategory('All')">બધું (All)</div>
+        <div class="cat-chip" onclick="filterCategory('Burger')">Burgers</div>
+        <div class="cat-chip" onclick="filterCategory('Sandwich')">Sandwiches (3 Layer)</div>
+        <div class="cat-chip" onclick="filterCategory('Tikka Pav')">Tikka Pav</div>
+        <div class="cat-chip" onclick="filterCategory('Fries')">French Fries</div>
+    </div>
+
+    <main class="menu-container" id="menuContainer">
+        <!-- Instantly populated by JS -->
+    </main>
+
+    <!-- Sticky Cart Bar -->
+    <div class="cart-sticky-bar" id="cartStickyBar">
+        <div class="cart-summary-text">
+            <div class="cart-qty-info" id="cartTotalItems">0 Items</div>
+            <div class="cart-total-info" id="cartTotalPrice">₹0</div>
+        </div>
+        <button class="btn-view-cart" onclick="openCartModal()">ઓર્ડર આગળ વધારો →</button>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal-overlay" id="cartModal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <h3>ઓર્ડર વિગતો (Your Cart)</h3>
+                <button class="btn-close-modal" onclick="closeCartModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="cartItemsList" style="display:flex; flex-direction:column; gap:12px;"></div>
+
+                <div class="bogo-card">
+                    <div>
+                        <b style="color:var(--gold-primary);">BOGO1ST</b>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">૧ મોબાઈલ નંબર પર ૧ વાર મફત આઇટમ!</div>
+                    </div>
+                    <button class="btn-add-item" style="padding:4px 10px; font-size:0.75rem;" onclick="applyBogoPromo()">લાગુ કરો</button>
+                </div>
+                <div id="promoFeedback" style="font-size:0.75rem; font-weight:600; display:none;"></div>
+
+                <div class="pincode-fixed-badge">
+                    📍 ડિલિવરી એરિયા: <b>વાસણા (380007)</b> - ફક્ત આ પિનકોડ માન્ય છે.
+                </div>
+
+                <div class="input-group">
+                    <label>મોબાઈલ નંબર (10 આંકડા) *</label>
+                    <input type="tel" id="custPhone" placeholder="દા.ત. 9876543210" maxlength="10">
+                </div>
+
+                <div class="input-group">
+                    <label>ગ્રાહકનું પૂરું નામ *</label>
+                    <input type="text" id="custName" placeholder="દા.ત. રમેશભાઈ પટેલ">
+                </div>
+
+                <div class="input-group">
+                    <label>ડિલિવરીનું ચોક્કસ સરનામું (વાસણા 380007) *</label>
+                    <textarea id="custAddress" rows="2" placeholder="ઘર નંબર, સોસાયટી/ફ્લેટનું નામ, લેન્ડમાર્ક, વાસણા"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label>પિનકોડ *</label>
+                    <input type="text" id="custPincode" value="380007" readonly style="background:#111; color:#888;">
+                </div>
+
+                <div style="background:var(--bg-elevated); padding:12px; border-radius:10px; display:flex; flex-direction:column; gap:6px; font-size:0.85rem;">
+                    <div style="display:flex; justify-content:space-between;"><span>સબટોટલ:</span> <span id="billSubtotal">₹0</span></div>
+                    <div style="display:flex; justify-content:space-between; color:var(--success);"><span>BOGO ડિસ્કાઉન્ટ:</span> <span id="billDiscount">-₹0</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>ડિલિવરી ચાર્જ:</span> <span style="color:var(--success);">FREE</span></div>
+                    <div style="display:flex; justify-content:space-between; font-weight:800; font-size:1.05rem; color:var(--gold-primary); border-top:1px dashed var(--border-subtle); padding-top:6px;">
+                        <span>કુલ ચૂકવવાપાત્ર (COD):</span> <span id="billFinal">₹0</span>
+                    </div>
+                </div>
+
+                <button class="btn-primary-action" onclick="sendOrderViaWhatsApp()">
+                    💬 WhatsApp પર ઓર્ડર કન્ફર્મ કરો
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin PIN Modal -->
+    <div class="modal-overlay" id="adminPinModal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <h3>માલિક એક્સેસ (Admin Login)</h3>
+                <button class="btn-close-modal" onclick="closeAdminPinModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>સિક્રેટ PIN દાખલ કરો:</label>
+                    <div class="pin-wrapper">
+                        <input type="password" id="adminPinInput" placeholder="PIN દાખલ કરો" maxlength="8">
+                        <button type="button" class="pin-toggle-btn" onclick="togglePinVisibility()" id="pinToggleBtn" title="Show/Hide PIN">👁️</button>
+                    </div>
+                </div>
+                <button class="btn-primary-action" onclick="verifyAdminPin()">લૉગિન કરો</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Menu Manager Dashboard Modal -->
+    <div class="modal-overlay" id="adminDashboardModal">
+        <div class="modal-sheet" style="max-height:95vh;">
+            <div class="modal-header">
+                <h3>લાઇવ ક્લાઉડ મેનેજમેન્ટ (Night Eats)</h3>
+                <button class="btn-close-modal" onclick="closeAdminDashboardModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <h4 style="color:var(--gold-primary); font-size:0.9rem;">+ નવી આઇટમ ઉમેરો</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div class="input-group">
+                        <label>વાનગીનું નામ</label>
+                        <input type="text" id="newItemName" placeholder="દા.ત. Peri Peri Burger">
+                    </div>
+                    <div class="input-group">
+                        <label>કેટેગરી</label>
+                        <select id="newItemCat">
+                            <option value="Burger">Burger</option>
+                            <option value="Sandwich">Sandwich</option>
+                            <option value="Tikka Pav">Tikka Pav</option>
+                            <option value="Fries">French Fries</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>ભાવ (₹)</label>
+                        <input type="number" id="newItemPrice" placeholder="દા.ત. 120">
+                    </div>
+                    <div class="input-group">
+                        <label>ડબલ ચીઝ ભાવ (વૈકલ્પિક)</label>
+                        <input type="number" id="newItemCheesePrice" placeholder="દા.ત. 140">
+                    </div>
+                </div>
+                <button class="btn-primary-action" style="padding:8px;" onclick="addNewMenuItem()">લાઇવ મેનૂમાં ઉમેરો</button>
+
+                <hr style="border:0; border-top:1px solid var(--border-subtle); margin:10px 0;">
+
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="color:var(--gold-primary); font-size:0.9rem;">લાઇવ સ્ટોક કંટ્રોલ (ક્લાઉડ સિન્ક)</h4>
+                    <button style="background:transparent; border:1px solid var(--border-subtle); color:var(--text-muted); padding:4px 8px; border-radius:6px; font-size:0.7rem; cursor:pointer;" onclick="resetToDefaultMenu()">મૂળ મેનૂ રીસ્ટોર</button>
+                </div>
+
+                <div style="max-height:350px; overflow-y:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>વાનગી</th>
+                                <th>ભાવ</th>
+                                <th>લાઈવ સ્ટોક</th>
+                                <th>કાઢી નાખો</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminItemsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 NIGHT EATS - PURE VEG BURGER CAFÉ</p>
+        <p style="margin-top:4px;">ઓર્ડર કોલ: +91 7202806140 | વાસણા, અમદાવાદ</p>
+        <span class="admin-link" onclick="openAdminPinModal()">માલિક પોર્ટલ (Admin Menu Manager)</span>
+    </footer>
+
+    <script>
+        const OWNER_PHONE = "917202806140";
+        const ADMIN_PIN = "7202";
+
+        const DEFAULT_MENU = [
+            { id: 1, name: "Island Delight", cat: "Burger", price: 80, cheesePrice: 100, desc: "Fresh crispy patty with Island special dressings", inStock: true },
+            { id: 2, name: "Tandoori Blast", cat: "Burger", price: 80, cheesePrice: 100, desc: "Spiced paneer/veg patty with smoky tandoori sauce", inStock: true },
+            { id: 3, name: "Butter Makhani", cat: "Burger", price: 80, cheesePrice: 100, desc: "Rich royal buttery makhani fusion burger", inStock: true },
+            { id: 4, name: "Mexican Masti", cat: "Burger", price: 80, cheesePrice: 100, desc: "Tangy Mexican salsa & creamy herbs filling", inStock: true },
+            { id: 5, name: "Mexican Cheese (3 Layer)", cat: "Sandwich", price: 160, desc: "Triple layer loaded cheese with Mexican herbs", inStock: true },
+            { id: 6, name: "Tandoori Cheese (3 Layer)", cat: "Sandwich", price: 150, desc: "Triple layer grilled sandwich with smoky cheese", inStock: true },
+            { id: 7, name: "Cheese Grilled (3 Layer)", cat: "Sandwich", price: 140, desc: "Crispy grilled bread packed with melted cheese", inStock: true },
+            { id: 8, name: "Classic Tandoori Twist", cat: "Tikka Pav", price: 100, desc: "Tandoori glazed spicy tikka filled in soft pav", inStock: true },
+            { id: 9, name: "Royal Makhani Pav", cat: "Tikka Pav", price: 100, desc: "Creamy butter makhani stuffed pav delight", inStock: true },
+            { id: 10, name: "Spicy Mexican Tikka", cat: "Tikka Pav", price: 100, desc: "Fiery Mexican marinated stuffing in butter toasted pav", inStock: true },
+            { id: 11, name: "Paneer Mayo Blast", cat: "Tikka Pav", price: 140, desc: "Rich paneer chunks with overloaded premium mayonnaise", inStock: true },
+            { id: 12, name: "Paneer Mexican", cat: "Tikka Pav", price: 140, desc: "Juicy paneer chunks with authentic Mexican seasoning", inStock: true },
+            { id: 13, name: "Tandoori Tikki", cat: "Tikka Pav", price: 120, desc: "Crunchy spicy patty nestled with smoky tandoori dressing", inStock: true },
+            { id: 14, name: "Salted French Fries (100g)", cat: "Fries", price: 70, desc: "Golden classic crispy salted potato fries", inStock: true },
+            { id: 15, name: "Peri Peri French Fries (100g)", cat: "Fries", price: 90, desc: "Tossed in fiery hot peri-peri spice dust", inStock: true },
+            { id: 16, name: "Cheese Burst French Fries (130g)", cat: "Fries", price: 120, desc: "Crispy fries smothered in delicious liquid cheese", inStock: true }
+        ];
+
+        let menuData = [...DEFAULT_MENU];
+        let cart = {};
+        let activeCategory = 'All';
+        let bogoApplied = false;
+
+        // Instantly display menu so page never remains blank
+        renderMenu();
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBg_gFyPxReHzUCdCjmzFI3G03SyAK9m-Y",
+            databaseURL: "https://night-eats-d36bb-default-rtdb.firebaseio.com",
+            projectId: "night-eats-d36bb"
+        };
+
+        let db = null;
+        let menuRef = null;
+        let bogoRef = null;
+
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.database();
+                menuRef = db.ref('menu');
+                bogoRef = db.ref('used_bogo_numbers');
+
+                // Real-time synchronization
+                menuRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data && Array.isArray(data) && data.length > 0) {
+                        menuData = data;
+                    } else {
+                        menuRef.set(DEFAULT_MENU);
+                        menuData = DEFAULT_MENU;
+                    }
+                    renderMenu();
+                    if (document.getElementById('adminDashboardModal').classList.contains('open')) {
+                        renderAdminTable();
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn("Firebase offline or initializing, running default menu mode:", e);
+        }
+
+        function filterCategory(cat) {
+            activeCategory = cat;
+            document.querySelectorAll('.cat-chip').forEach(el => {
+                el.classList.toggle('active', el.textContent.includes(cat) || (cat === 'All' && el.textContent.includes('બધું')));
+            });
+            renderMenu();
+        }
+
+        function renderMenu() {
+            const container = document.getElementById('menuContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const filtered = activeCategory === 'All' 
+                ? menuData 
+                : menuData.filter(i => i.cat === activeCategory);
+
+            filtered.forEach(item => {
+                const hasCheese = !!item.cheesePrice;
+                const cartKeyRegular = `${item.id}_reg`;
+                const cartKeyCheese = `${item.id}_cheese`;
+                const qtyReg = cart[cartKeyRegular] ? cart[cartKeyRegular].qty : 0;
+                const qtyCheese = cart[cartKeyCheese] ? cart[cartKeyCheese].qty : 0;
+
+                const card = document.createElement('div');
+                card.className = `menu-card ${item.inStock ? '' : 'out-of-stock'}`;
+
+                card.innerHTML = `
+                    <div class="item-top-row">
+                        <div>
+                            <div class="veg-icon"><div class="veg-dot"></div></div>
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-desc">${item.desc || ''}</div>
+                            <div class="item-pricing">₹${item.price} ${hasCheese ? `<span style="font-size:0.8rem; color:var(--text-muted); font-weight:400;">| Double Cheese: ₹${item.cheesePrice}</span>` : ''}</div>
+                        </div>
+                    </div>
+
+                    ${item.inStock ? `
+                        ${hasCheese ? `
+                            <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-elevated); padding:6px 10px; border-radius:8px;">
+                                    <span style="font-size:0.8rem;">Regular (₹${item.price})</span>
+                                    ${qtyReg === 0 ? `
+                                        <button class="btn-add-item" onclick="addToCart('${item.id}', 'reg', ${item.price}, '${item.name} (Regular)')">+ ADD</button>
+                                    ` : `
+                                        <div class="qty-control">
+                                            <button class="qty-btn" onclick="updateQty('${cartKeyRegular}', -1)">-</button>
+                                            <span class="qty-val">${qtyReg}</span>
+                                            <button class="qty-btn" onclick="updateQty('${cartKeyRegular}', 1)">+</button>
+                                        </div>
+                                    `}
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-elevated); padding:6px 10px; border-radius:8px;">
+                                    <span style="font-size:0.8rem;">Double Cheese (₹${item.cheesePrice})</span>
+                                    ${qtyCheese === 0 ? `
+                                        <button class="btn-add-item" onclick="addToCart('${item.id}', 'cheese', ${item.cheesePrice}, '${item.name} (Double Cheese)')">+ ADD</button>
+                                    ` : `
+                                        <div class="qty-control">
+                                            <button class="qty-btn" onclick="updateQty('${cartKeyCheese}', -1)">-</button>
+                                            <span class="qty-val">${qtyCheese}</span>
+                                            <button class="qty-btn" onclick="updateQty('${cartKeyCheese}', 1)">+</button>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="action-row">
+                                <span style="font-size:0.8rem; color:var(--text-muted);">પ્યોર વેજ તાજો સ્વાદ</span>
+                                ${qtyReg === 0 ? `
+                                    <button class="btn-add-item" onclick="addToCart('${item.id}', 'reg', ${item.price}, '${item.name}')">+ ADD</button>
+                                ` : `
+                                    <div class="qty-control">
+                                        <button class="qty-btn" onclick="updateQty('${cartKeyRegular}', -1)">-</button>
+                                        <span class="qty-val">${qtyReg}</span>
+                                        <button class="qty-btn" onclick="updateQty('${cartKeyRegular}', 1)">+</button>
+                                    </div>
+                                `}
+                            </div>
+                        `}
+                    ` : `
+                        <div style="color:var(--danger); font-size:0.85rem; font-weight:700; margin-top:8px;">❌ SOLD OUT (હાલમાં સ્ટોક ખલાસ છે)</div>
+                    `}
+                `;
+                container.appendChild(card);
+            });
+            updateStickyCartBar();
+        }
+
+        function addToCart(itemId, variant, price, fullName) {
+            const key = `${itemId}_${variant}`;
+            if (!cart[key]) {
+                cart[key] = { itemId, variant, name: fullName, price, qty: 1 };
+            } else {
+                cart[key].qty++;
+            }
+            renderMenu();
+        }
+
+        function updateQty(key, delta) {
+            if (cart[key]) {
+                cart[key].qty += delta;
+                if (cart[key].qty <= 0) {
+                    delete cart[key];
+                }
+            }
+            renderMenu();
+            if (document.getElementById('cartModal').classList.contains('open')) {
+                renderCartModal();
+            }
+        }
+
+        function updateStickyCartBar() {
+            let totalItems = 0;
+            let totalPrice = 0;
+            for (let k in cart) {
+                totalItems += cart[k].qty;
+                totalPrice += cart[k].price * cart[k].qty;
+            }
+
+            const bar = document.getElementById('cartStickyBar');
+            if (totalItems > 0) {
+                document.getElementById('cartTotalItems').textContent = `${totalItems} ${totalItems === 1 ? 'આઇટમ' : 'આઇટમ્સ'}`;
+                document.getElementById('cartTotalPrice').textContent = `₹${totalPrice}`;
+                bar.classList.add('visible');
+            } else {
+                bar.classList.remove('visible');
+            }
+        }
+
+        function openCartModal() {
+            renderCartModal();
+            document.getElementById('cartModal').classList.add('open');
+        }
+
+        function closeCartModal() {
+            document.getElementById('cartModal').classList.remove('open');
+        }
+
+        function renderCartModal() {
+            const list = document.getElementById('cartItemsList');
+            list.innerHTML = '';
+            let subtotal = 0;
+            let allItems = [];
+
+            for (let k in cart) {
+                const item = cart[k];
+                subtotal += item.price * item.qty;
+                for (let i = 0; i < item.qty; i++) {
+                    allItems.push(item.price);
+                }
+
+                const row = document.createElement('div');
+                row.className = 'cart-item-row';
+                row.innerHTML = `
+                    <div>
+                        <div style="font-weight:600; font-size:0.9rem;">${item.name}</div>
+                        <div style="font-size:0.75rem; color:var(--gold-primary);">₹${item.price} × ${item.qty} = ₹${item.price * item.qty}</div>
+                    </div>
+                    <div class="qty-control">
+                        <button class="qty-btn" onclick="updateQty('${k}', -1)">-</button>
+                        <span class="qty-val">${item.qty}</span>
+                        <button class="qty-btn" onclick="updateQty('${k}', 1)">+</button>
+                    </div>
+                `;
+                list.appendChild(row);
+            }
+
+            let discount = 0;
+            if (bogoApplied && allItems.length >= 2) {
+                allItems.sort((a, b) => a - b);
+                discount = allItems[0];
+            }
+
+            const finalAmt = Math.max(0, subtotal - discount);
+
+            document.getElementById('billSubtotal').textContent = `₹${subtotal}`;
+            document.getElementById('billDiscount').textContent = `-₹${discount}`;
+            document.getElementById('billFinal').textContent = `₹${finalAmt}`;
+        }
+
+        async function applyBogoPromo() {
+            const phone = document.getElementById('custPhone').value.trim();
+            const fb = document.getElementById('promoFeedback');
+
+            if (!phone || phone.length < 10) {
+                fb.style.display = 'block';
+                fb.style.color = 'var(--danger)';
+                fb.textContent = '⚠️ કૃપા કરીને પહેલા તમારો 10 આંકડાનો મોબાઈલ નંબર લખો!';
+                return;
+            }
+
+            let totalQty = 0;
+            for (let k in cart) {
+                totalQty += cart[k].qty;
+            }
+
+            if (totalQty < 2) {
+                fb.style.display = 'block';
+                fb.style.color = 'var(--danger)';
+                fb.textContent = '⚠️ BOGO ઓફર માટે કાર્ટમાં ઓછામાં ઓછી 2 આઇટમ્સ હોવી જરૂરી છે!';
+                return;
+            }
+
+            fb.style.display = 'block';
+            fb.style.color = 'var(--gold-primary)';
+            fb.textContent = 'નંબર ચકાસી રહ્યા છીએ...';
+
+            if (bogoRef) {
+                try {
+                    const snapshot = await bogoRef.child(phone).once('value');
+                    if (snapshot.exists()) {
+                        bogoApplied = false;
+                        fb.style.color = 'var(--danger)';
+                        fb.textContent = '❌ માફ કરશો, આ મોબાઈલ નંબર પર BOGO1ST ઓફર અગાઉ વપરાઈ ચૂકેલી છે!';
+                        renderCartModal();
+                        return;
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            bogoApplied = true;
+            fb.style.color = 'var(--success)';
+            fb.textContent = '🎉 BOGO1ST સફળતાપૂર્વક લાગુ થઈ ગયો! સૌથી ઓછી કિંમતની 1 આઇટમ બિલકુલ ફ્રી.';
+            renderCartModal();
+        }
+
+        async function sendOrderViaWhatsApp() {
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+            const address = document.getElementById('custAddress').value.trim();
+            const pincode = document.getElementById('custPincode').value.trim();
+
+            if (!phone || phone.length < 10) {
+                alert('કૃપા કરીને સાચો 10 આંકડાનો મોબાઈલ નંબર દાખલ કરો!');
+                return;
+            }
+
+            if (!name || !address) {
+                alert('કૃપા કરીને નામ અને વાસણાનું પૂરું સરનામું દાખલ કરો!');
+                return;
+            }
+
+            if (pincode !== '380007') {
+                alert('માફ કરશો, ડિલિવરી ફક્ત વાસણા (પિનકોડ: 380007) માટે જ ઉપલબ્ધ છે.');
+                return;
+            }
+
+            let itemsSummary = '';
+            let subtotal = 0;
+            let allPrices = [];
+
+            for (let k in cart) {
+                const itm = cart[k];
+                subtotal += itm.price * itm.qty;
+                itemsSummary += `• ${itm.name} x ${itm.qty} = ₹${itm.price * itm.qty}\n`;
+                for (let i = 0; i < itm.qty; i++) {
+                    allPrices.push(itm.price);
+                }
+            }
+
+            let discount = 0;
+            if (bogoApplied && allPrices.length >= 2) {
+                allItemsSorted = [...allPrices].sort((a, b) => a - b);
+                discount = allItemsSorted[0];
+
+                if (bogoRef) {
+                    bogoRef.child(phone).set({
+                        usedAt: new Date().toISOString(),
+                        customerName: name
+                    });
+                }
+            }
+
+            const finalTotal = subtotal - discount;
+
+            const msg = `*નવો ઓર્ડર - NIGHT EATS (વાસણા)*\n` +
+                `------------------------------------\n` +
+                `*ગ્રાહક:* ${name}\n` +
+                `*મોબાઈલ:* ${phone}\n` +
+                `*સરનામું:* ${address}, વાસણા (380007)\n` +
+                `------------------------------------\n` +
+                `*ઓર્ડર આઇટમ્સ:*\n${itemsSummary}` +
+                `------------------------------------\n` +
+                `સબટોટલ: ₹${subtotal}\n` +
+                (discount > 0 ? `BOGO ડિસ્કાઉન્ટ: -₹${discount}\n` : '') +
+                `*કુલ રકમ (COD): ₹${finalTotal}*\n` +
+                `પેમેન્ટ: Cash on Delivery / UPI on Delivery\n` +
+                `------------------------------------\n` +
+                `કૃપા કરીને મારો ઓર્ડર કન્ફર્મ કરો!`;
+
+            const whatsappUrl = `https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(msg)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        /* Admin & PIN System */
+        function openAdminPinModal() {
+            document.getElementById('adminPinInput').value = '';
+            const pinInput = document.getElementById('adminPinInput');
+            pinInput.type = "password";
+            document.getElementById('pinToggleBtn').textContent = "👁️";
+            document.getElementById('adminPinModal').classList.add('open');
+        }
+
+        function closeAdminPinModal() {
+            document.getElementById('adminPinModal').classList.remove('open');
+        }
+
+        function togglePinVisibility() {
+            const pinInput = document.getElementById('adminPinInput');
+            const toggleBtn = document.getElementById('pinToggleBtn');
+            if (pinInput.type === "password") {
+                pinInput.type = "text";
+                toggleBtn.textContent = "🙈";
+            } else {
+                pinInput.type = "password";
+                toggleBtn.textContent = "👁️";
+            }
+        }
+
+        function verifyAdminPin() {
+            const entered = document.getElementById('adminPinInput').value.trim();
+            if (entered === ADMIN_PIN) {
+                closeAdminPinModal();
+                openAdminDashboardModal();
+            } else {
+                alert('ખોટો PIN! કૃપા કરીને સાચો PIN દાખલ કરો.');
+            }
+        }
+
+        function openAdminDashboardModal() {
+            renderAdminTable();
+            document.getElementById('adminDashboardModal').classList.add('open');
+        }
+
+        function closeAdminDashboardModal() {
+            document.getElementById('adminDashboardModal').classList.remove('open');
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('adminItemsTableBody');
+            tbody.innerHTML = '';
+
+            menuData.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>${item.name}</b><br><small style="color:var(--text-muted);">${item.cat}</small></td>
+                    <td>₹${item.price} ${item.cheesePrice ? `/ ₹${item.cheesePrice}` : ''}</td>
+                    <td>
+                        <button class="btn-toggle-stock ${item.inStock ? 'instock' : 'outstock'}" onclick="toggleItemStock(${index})">
+                            ${item.inStock ? 'In Stock' : 'Out'}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn-del-item" onclick="deleteMenuItem(${index})">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleItemStock(index) {
+            menuData[index].inStock = !menuData[index].inStock;
+            if (menuRef) {
+                menuRef.set(menuData);
+            }
+            renderAdminTable();
+            renderMenu();
+        }
+
+        function deleteMenuItem(index) {
+            if (confirm('શું તમે આ વાનગીને લાઈવ મેનૂમાંથી કાયમ માટે કાઢી નાખવા માંગો છો?')) {
+                menuData.splice(index, 1);
+                if (menuRef) {
+                    menuRef.set(menuData);
+                }
+                renderAdminTable();
+                renderMenu();
+            }
+        }
+
+        function addNewMenuItem() {
+            const name = document.getElementById('newItemName').value.trim();
+            const cat = document.getElementById('newItemCat').value;
+            const price = parseFloat(document.getElementById('newItemPrice').value);
+            const cheesePrice = parseFloat(document.getElementById('newItemCheesePrice').value) || null;
+
+            if (!name || isNaN(price)) {
+                alert('કૃપા કરીને વાનગીનું નામ અને સાચો ભાવ દાખલ કરો!');
+                return;
+            }
+
+            const newItem = {
+                id: Date.now(),
+                name,
+                cat,
+                price,
+                cheesePrice,
+                desc: 'Night Eats Special Fresh Preparation',
+                inStock: true
+            };
+
+            menuData.push(newItem);
+            if (menuRef) {
+                menuRef.set(menuData);
+            }
+
+            renderAdminTable();
+            renderMenu();
+
+            document.getElementById('newItemName').value = '';
+            document.getElementById('newItemPrice').value = '';
+            document.getElementById('newItemCheesePrice').value = '';
+            alert('નવી વાનગી સફળતાપૂર્વક ઉમેરાઈ ગઈ છે!');
+        }
+
+        function resetToDefaultMenu() {
+            if (confirm('શું તમે ઓરિજિનલ મેનૂ ફરીથી રીસ્ટોર કરવા માંગો છો?')) {
+                menuData = [...DEFAULT_MENU];
+                if (menuRef) {
+                    menuRef.set(DEFAULT_MENU);
+                }
+                renderAdminTable();
+                renderMenu();
+            }
+        }
+    </script>
+</body>
+</html>
