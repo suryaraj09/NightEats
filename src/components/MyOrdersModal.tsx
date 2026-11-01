@@ -40,7 +40,7 @@ export function MyOrdersModal({ open, onClose }: Props) {
           </ul>
           <div style={{ fontWeight: 700 }}>
             કુલ (COD): <span style={{ color: 'var(--gold-primary)' }}>₹{o.total}</span>
-            {o.bogo_applied && <span className="order-bogo"> BOGO -₹{o.discount}</span>}
+            {o.coupon_code && <span className="order-bogo"> {o.coupon_code}{o.discount > 0 ? ` -₹${o.discount}` : ''}</span>}
           </div>
         </div>
       ))}

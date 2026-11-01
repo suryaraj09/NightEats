@@ -637,3 +637,14 @@ footer {
     cursor: pointer;
 }
 .order-action.danger { border-color: var(--danger); color: var(--danger); }
+
+/* coupons (admin tab + cart) */
+.coupon-checks { max-height: 130px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 0.75rem; padding: 6px; border: 1px solid var(--border-subtle); border-radius: 8px; }
+.coupon-checks label, .coupon-check { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-main, inherit); cursor: pointer; }
+.coupon-checks input, .coupon-check input { width: auto; }
+.coupon-days { display: flex; flex-wrap: wrap; gap: 4px; }
+.coupon-days button { background: transparent; border: 1px solid var(--border-subtle); color: var(--text-muted); border-radius: 6px; padding: 4px 8px; font-size: 0.72rem; cursor: pointer; }
+.coupon-days button.on { background: var(--gold-primary); color: #000; border-color: var(--gold-primary); font-weight: 700; }
+.coupon-box { background: rgba(212, 175, 55, 0.08); border: 1px dashed var(--gold-primary); padding: 12px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; }
+.coupon-row { display: flex; gap: 8px; }
+.coupon-row input { flex: 1; min-width: 0; text-transform: uppercase; }

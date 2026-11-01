@@ -36,6 +36,7 @@ export interface PlacedOrder {
   subtotal: number;
   discount: number;
   total: number;
+  coupon_code: string | null;
   lines: { name: string; unit_price: number; qty: number }[];
 }
 
@@ -50,7 +51,7 @@ export interface OrderRow {
   subtotal: number;
   discount: number;
   total: number;
-  bogo_applied: boolean;
+  coupon_code: string | null;
   status: OrderStatus;
   created_at: string;
   order_items: { id: number; name: string; unit_price: number; qty: number }[];
