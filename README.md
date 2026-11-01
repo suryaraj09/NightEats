@@ -49,3 +49,12 @@ as environment variables. `vercel.json` already handles the build and SPA rewrit
 - In the Supabase dashboard keep *Authentication → Providers → Email* disabled and review the auth rate limits.
 - Firebase decommission (manual, in the Firebase console): the old API key and database URL are in git history,
   so set Realtime Database rules to deny all (or delete the database), then restrict/rotate the API key.
+
+## Dependencies and `npm audit`
+
+- Production dependencies (`react`, `react-dom`, `@supabase/supabase-js`) have **0** known vulnerabilities (`npm audit --omit=dev`).
+- Remaining findings are in dev-only tooling that is never shipped or run in production: the `vercel` and
+  `supabase` CLIs (transitive `tar`, `zod`, `js-yaml`, `ajv`) and ESLint (`minimatch`, `glob`). They need upstream
+  releases; do **not** run `npm audit fix --force` (it downgrades the CLIs). Re-check with `npm audit` now and then.
+- Install scripts are denied in `package.json` (`allowScripts`). `esbuild`'s postinstall only verifies its binary
+  (the real binary comes from a platform package) and `koffi` is a CLI-only native helper; builds, tests and CI work without them.
