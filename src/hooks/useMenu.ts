@@ -1,16 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { Tables } from '../lib/database.types';
 import { supabase } from '../lib/supabase';
 import type { Category, MenuItem } from '../types';
 
-interface Row {
-  id: number;
-  name: string;
-  category: Category;
-  price: number;
-  cheese_price: number | null;
-  description: string;
-  in_stock: boolean;
-}
+/** menu_items row; category is narrowed to the DB check constraint. */
+type Row = Omit<Tables<'menu_items'>, 'category'> & { category: Category };
 
 const fromRow = (r: Row): MenuItem => ({
   id: r.id,

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { bogoDiscount, cartTotals } from '../lib/cart';
+import { cartTotals } from '../lib/cart';
+import { couponErrorText, type CouponCheck } from '../lib/coupons';
 import type { Cart, PlacedOrder } from '../types';
 
 interface Props {
@@ -19,58 +20,90 @@ type Feedback = { text: string; color: string } | null;
 export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile }: Props) {
   const { profile } = useAuth();
   const [address, setAddress] = useState('');
-  const [bogo, setBogo] = useState(false);
+  const [code, setCode] = useState('');
+  const [applied, setApplied] = useState<{ code: string; discount: number; freeItem: string | null; desc: string | null } | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [busy, setBusy] = useState(false);
   const [placed, setPlaced] = useState<{ order: PlacedOrder; address: string } | null>(null);
 
-  const { items, subtotal, unitPrices } = cartTotals(cart);
-  const discount = bogoDiscount(unitPrices, bogo);
+  const { items, subtotal } = cartTotals(cart);
+  const discount = applied?.discount ?? 0;
   const final = Math.max(0, subtotal - discount);
+  const orderItems = Object.values(cart).map((l) => ({ menu_item_id: l.itemId, variant: l.variant, qty: l.qty }));
+  const itemsKey = JSON.stringify(orderItems);
 
   // Forget the confirmation once the modal is closed by any route.
   useEffect(() => {
     if (!open) setPlaced(null);
   }, [open]);
 
-  // BOGO needs >= 2 units; drop it if the cart shrinks below that.
-  useEffect(() => {
-    if (bogo && items < 2) setBogo(false);
-  }, [bogo, items]);
-
-  const applyBogo = async () => {
-    if (items < 2) {
-      setBogo(false);
-      return setFeedback({ text: '⚠️ BOGO ઓફર માટે કાર્ટમાં ઓછામાં ઓછી 2 આઇટમ્સ હોવી જરૂરી છે!', color: 'var(--danger)' });
-    }
-    setFeedback({ text: 'નંબર ચકાસી રહ્યા છીએ...', color: 'var(--gold-primary)' });
-    const { data, error } = await supabase.rpc('bogo_available');
-    if (error) return setFeedback({ text: error.message, color: 'var(--danger)' });
-    if (!data) {
-      setBogo(false);
-      return setFeedback({ text: '❌ માફ કરશો, આ મોબાઈલ નંબર પર BOGO1ST ઓફર અગાઉ વપરાઈ ચૂકેલી છે!', color: 'var(--danger)' });
-    }
-    setBogo(true);
-    setFeedback({ text: '🎉 BOGO1ST સફળતાપૂર્વક લાગુ થઈ ગયો! સૌથી ઓછી કિંમતની 1 આઇટમ બિલકુલ ફ્રી.', color: 'var(--success)' });
+  // The server prices coupons. Ask it (validate_coupon); the real discount is recomputed again in place_order.
+  const check = async (c: string): Promise<CouponCheck | string> => {
+    const { data, error } = await supabase.rpc('validate_coupon', { p_code: c, p_items: JSON.parse(itemsKey) });
+    if (error) return error.message;
+    return (Array.isArray(data) ? data[0] : data) as CouponCheck;
   };
+
+  const applyCoupon = async () => {
+    const c = code.trim().toUpperCase();
+    if (!c) return;
+    setFeedback({ text: 'કોડ ચકાસી રહ્યા છીએ...', color: 'var(--gold-primary)' });
+    const res = await check(c);
+    if (typeof res === 'string' || !res.valid) {
+      setApplied(null);
+      return setFeedback({ text: `❌ ${typeof res === 'string' ? res : res.reason}`, color: 'var(--danger)' });
+    }
+    setApplied({ code: c, discount: res.discount, freeItem: res.free_item_name, desc: res.coupon_desc });
+    setFeedback(null);
+  };
+
+  const removeCoupon = () => {
+    setApplied(null);
+    setFeedback(null);
+    setCode('');
+  };
+
+  // Keep the preview honest when the cart changes (quantities, items removed...).
+  const appliedCode = applied?.code;
+  useEffect(() => {
+    if (!appliedCode || !open) return;
+    let stale = false;
+    void check(appliedCode).then((res) => {
+      if (stale) return;
+      if (typeof res === 'string' || !res.valid) {
+        setApplied(null);
+        setFeedback({ text: `❌ ${typeof res === 'string' ? res : res.reason}`, color: 'var(--danger)' });
+      } else {
+        setApplied({ code: appliedCode, discount: res.discount, freeItem: res.free_item_name, desc: res.coupon_desc });
+      }
+    });
+    return () => {
+      stale = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsKey, appliedCode, open]);
 
   const placeOrder = async () => {
     if (!address.trim()) return alert('કૃપા કરીને નામ અને વાસણાનું પૂરું સરનામું દાખલ કરો!');
     setBusy(true);
     const { data, error } = await supabase.rpc('place_order', {
-      p_items: Object.values(cart).map((l) => ({ menu_item_id: l.itemId, variant: l.variant, qty: l.qty })),
+      p_items: orderItems,
       p_address: address,
-      p_use_bogo: bogo,
+      p_coupon_code: applied?.code,
     });
     setBusy(false);
     const order = (Array.isArray(data) ? data[0] : data) as PlacedOrder | undefined;
     if (error || !order) {
-      if (error?.message.includes('BOGO1ST already used')) setBogo(false);
-      return alert(error?.message === 'shop closed' ? 'શોપ હમણાં બંધ છે. કૃપા કરીને પછી પ્રયાસ કરો.' : (error?.message ?? 'ઓર્ડર નિષ્ફળ ગયો. ફરી પ્રયાસ કરો.'));
+      const couponReason = error ? couponErrorText(error.message) : null;
+      if (couponReason) setApplied(null);
+      return alert(
+        couponReason ?? (error?.message === 'shop closed' ? 'શોપ હમણાં બંધ છે. કૃપા કરીને પછી પ્રયાસ કરો.' : (error?.message ?? 'ઓર્ડર નિષ્ફળ ગયો. ફરી પ્રયાસ કરો.')),
+      );
     }
     setPlaced({ order, address: address.trim() });
     setAddress('');
-    setBogo(false);
+    setApplied(null);
+    setCode('');
     setFeedback(null);
     onOrdered();
   };
@@ -98,7 +131,7 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
         <div style={{ background: 'var(--bg-elevated)', padding: 12, borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.85rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>સબટોટલ:</span><span>₹{order.subtotal}</span></div>
           {order.discount > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success)' }}><span>BOGO ડિસ્કાઉન્ટ:</span><span>-₹{order.discount}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success)' }}><span>કૂપન{order.coupon_code ? ` (${order.coupon_code})` : ''}:</span><span>-₹{order.discount}</span></div>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: 'var(--gold-primary)', borderTop: '1px dashed var(--border-subtle)', paddingTop: 6 }}>
             <span>કુલ ચૂકવવાપાત્ર (COD):</span><span>₹{order.total}</span>
@@ -134,14 +167,38 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
         ))}
       </div>
 
-      <div className="bogo-card">
-        <div>
-          <b style={{ color: 'var(--gold-primary)' }}>BOGO1ST</b>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>૧ મોબાઈલ નંબર પર ૧ વાર મફત આઇટમ!</div>
-        </div>
-        <button className="btn-add-item" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={() => void applyBogo()}>
-          લાગુ કરો
-        </button>
+      <div className="coupon-box">
+        {applied ? (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                🎟️ <b style={{ color: 'var(--gold-primary)' }}>{applied.code}</b> લાગુ થયો
+                {applied.desc && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{applied.desc}</div>}
+              </div>
+              <button className="btn-add-item" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={removeCoupon}>કાઢી નાખો</button>
+            </div>
+            <div style={{ color: 'var(--success)', fontWeight: 600 }}>
+              {applied.freeItem ? `🎁 ફ્રી: ${applied.freeItem}` : `🎉 તમે ₹${applied.discount} બચાવ્યા!`}
+            </div>
+          </>
+        ) : (
+          <>
+            <b style={{ color: 'var(--gold-primary)' }}>કૂપન કોડ</b>
+            <div className="coupon-row">
+              <input
+                type="text"
+                value={code}
+                maxLength={20}
+                placeholder="દા.ત. BOGO1ST"
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && void applyCoupon()}
+              />
+              <button className="btn-add-item" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={() => void applyCoupon()}>
+                લાગુ કરો
+              </button>
+            </div>
+          </>
+        )}
       </div>
       {feedback && <div style={{ fontSize: '0.75rem', fontWeight: 600, color: feedback.color }}>{feedback.text}</div>}
 
@@ -176,7 +233,11 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
 
       <div style={{ background: 'var(--bg-elevated)', padding: 12, borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.85rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>સબટોટલ:</span><span>₹{subtotal}</span></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success)' }}><span>BOGO ડિસ્કાઉન્ટ:</span><span>-₹{discount}</span></div>
+        {applied && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success)' }}>
+            <span>કૂપન ({applied.code}):</span><span>{applied.freeItem ? `🎁 ${applied.freeItem}` : `-₹${discount}`}</span>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>ડિલિવરી ચાર્જ:</span><span style={{ color: 'var(--success)' }}>FREE</span></div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.05rem', color: 'var(--gold-primary)', borderTop: '1px dashed var(--border-subtle)', paddingTop: 6 }}>
           <span>કુલ ચૂકવવાપાત્ર (COD):</span><span>₹{final}</span>
