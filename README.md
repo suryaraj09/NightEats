@@ -1,7 +1,7 @@
 # Night Eats
 
 React + TypeScript (Vite) storefront, Supabase (Auth + Postgres + Realtime), hosted on Vercel.
-The original single-file Firebase page is kept in `legacy/index.html` for reference.
+The original single-file Firebase page was removed (it remains in git history).
 
 ## One-time setup
 
@@ -37,3 +37,15 @@ as environment variables. `vercel.json` already handles the build and SPA rewrit
   BOGO1ST (once per phone *and* per account), saves the order, and the app shows an in-app confirmation.
 - The owner sees new orders live in the admin portal (Orders tab, with a badge and beep) and can open or
   close the shop with the Open/Closed switch; while closed, customers can browse but not order.
+
+## Security notes
+
+- Migrations run in order: `0001_init.sql`, `0002_orders_realtime_and_shop_status.sql`, `0003_security_hardening.sql`.
+- Clients can only edit `name` and `phone` on their own profile (column grants), and can only create orders
+  through `place_order()`, which caps cart size, limits pending/hourly orders per account and fixes the pincode.
+- Admin = confirmed email in `admin_emails` **and** a linked Google identity.
+- **Known accepted risk:** phone numbers are not verified (no OTP), so the BOGO once-per-phone rule can be
+  sidestepped with a second Google account and a made-up number. The once-per-account rule still holds.
+- In the Supabase dashboard keep *Authentication → Providers → Email* disabled and review the auth rate limits.
+- Firebase decommission (manual, in the Firebase console): the old API key and database URL are in git history,
+  so set Realtime Database rules to deny all (or delete the database), then restrict/rotate the API key.
