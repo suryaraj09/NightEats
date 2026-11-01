@@ -1,4 +1,4 @@
-import type { Cart } from '../types';
+import type { Cart, CartLine } from '../types';
 
 const CART_KEY = 'nighteats.cart';
 const INTENT_KEY = 'nighteats.intent';
@@ -31,11 +31,14 @@ export function loadCart(): Cart {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return {};
     const cart: Cart = {};
-    for (const [key, l] of Object.entries(parsed as Record<string, any>)) {
+    for (const [key, l] of Object.entries(parsed as Record<string, Partial<CartLine> | null>)) {
       const ok =
         l && l.key === key && Number.isInteger(l.itemId) && (l.variant === 'reg' || l.variant === 'cheese') &&
-        typeof l.name === 'string' && Number.isFinite(l.price) && Number.isInteger(l.qty) && l.qty > 0;
-      if (ok) cart[key] = { key, itemId: l.itemId, variant: l.variant, name: l.name, price: l.price, qty: l.qty };
+        typeof l.name === 'string' && Number.isFinite(l.price) && Number.isInteger(l.qty) && (l.qty ?? 0) > 0;
+      if (ok) {
+        const v = l as CartLine; // fields validated above
+        cart[key] = { key, itemId: v.itemId, variant: v.variant, name: v.name, price: v.price, qty: v.qty };
+      }
     }
     return cart;
   } catch {
