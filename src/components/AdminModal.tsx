@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
+import { CouponsTab } from './CouponsTab';
 import { MenuTab } from './MenuTab';
 import { OrdersTab } from './OrdersTab';
 import { useOrders } from '../hooks/useOrders';
@@ -15,7 +16,7 @@ interface Props {
 }
 
 export function AdminModal({ open, onClose, items, reload, shop }: Props) {
-  const [tab, setTab] = useState<'menu' | 'orders'>('orders');
+  const [tab, setTab] = useState<'menu' | 'orders' | 'coupons'>('orders');
   const { orders, error, setStatus, newCount } = useOrders(open);
   const [note, setNote] = useState(shop.note);
   useEffect(() => setNote(shop.note), [shop.note]);
@@ -64,13 +65,12 @@ export function AdminModal({ open, onClose, items, reload, shop }: Props) {
           ઓર્ડર્સ {newCount > 0 && <span className="tab-badge">{newCount}</span>}
         </button>
         <button className={tab === 'menu' ? 'active' : ''} onClick={() => setTab('menu')}>મેનૂ</button>
+        <button className={tab === 'coupons' ? 'active' : ''} onClick={() => setTab('coupons')}>કૂપન્સ</button>
       </div>
 
-      {tab === 'orders' ? (
-        <OrdersTab orders={orders} error={error} setStatus={setStatus} />
-      ) : (
-        <MenuTab items={items} reload={reload} />
-      )}
+      {tab === 'orders' && <OrdersTab orders={orders} error={error} setStatus={setStatus} />}
+      {tab === 'menu' && <MenuTab items={items} reload={reload} />}
+      {tab === 'coupons' && <CouponsTab items={items} active={open} />}
     </Modal>
   );
 }

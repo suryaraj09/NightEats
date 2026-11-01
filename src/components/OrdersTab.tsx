@@ -66,7 +66,7 @@ export function OrdersTab({ orders, error, setStatus }: Props) {
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
             <span>
               કુલ (COD): <span style={{ color: 'var(--gold-primary)' }}>₹{o.total}</span>
-              {o.bogo_applied && <span className="order-bogo"> BOGO -₹{o.discount}</span>}
+              {o.coupon_code && <span className="order-bogo"> {o.coupon_code}{o.discount > 0 ? ` -₹${o.discount}` : ''}</span>}
             </span>
           </div>
           {NEXT[o.status].length > 0 && (
