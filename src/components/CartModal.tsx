@@ -89,7 +89,7 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
     const { data, error } = await supabase.rpc('place_order', {
       p_items: orderItems,
       p_address: address,
-      p_coupon_code: applied?.code ?? null,
+      p_coupon_code: applied?.code,
     });
     setBusy(false);
     const order = (Array.isArray(data) ? data[0] : data) as PlacedOrder | undefined;

@@ -1,38 +1,15 @@
+import type { Tables } from './database.types';
 import type { Category, MenuItem } from '../types';
 
 export type CouponType = 'percent' | 'flat' | 'buy_x_get_y' | 'free_item' | 'bundle';
 export type AppliesTo = 'cart' | 'category' | 'items';
 
-/** A row of public.coupons (admin only; customers never see this table). */
-export interface CouponRow {
-  id: number;
-  code: string;
-  description: string;
+/** A row of public.coupons (admin only; customers never see this table). Unions are the DB check constraints. */
+export type CouponRow = Omit<Tables<'coupons'>, 'type' | 'applies_to' | 'category'> & {
   type: CouponType;
-  percent_off: number | null;
-  max_discount: number | null;
-  flat_off: number | null;
-  buy_qty: number | null;
-  free_qty: number | null;
-  free_item_id: number | null;
-  bundle_qty: number | null;
-  bundle_price: number | null;
   applies_to: AppliesTo;
   category: Category | null;
-  item_ids: number[];
-  min_qty: number;
-  min_order_value: number;
-  max_total_uses: number | null;
-  max_uses_per_user: number | null;
-  max_uses_per_phone: number | null;
-  first_order_only: boolean;
-  starts_at: string | null;
-  ends_at: string | null;
-  days_of_week: number[] | null;
-  start_time: string | null;
-  end_time: string | null;
-  is_active: boolean;
-}
+};
 
 /** Result of the validate_coupon() RPC. */
 export interface CouponCheck {
@@ -124,7 +101,7 @@ const num = (v: string): Num => {
   return /^\d+$/.test(t) ? parseInt(t, 10) : 'bad';
 };
 
-export type CouponPayload = Omit<CouponRow, 'id'>;
+export type CouponPayload = Omit<CouponRow, 'id' | 'created_at'>;
 
 /** Validate the form and build the row to save, or return a Gujarati error message. */
 export function rowFromForm(f: CouponForm): { row: CouponPayload } | { error: string } {

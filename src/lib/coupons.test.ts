@@ -67,6 +67,7 @@ const row: CouponRow = {
   buy_qty: 1, free_qty: 1, free_item_id: null, bundle_qty: null, bundle_price: null, applies_to: 'cart', category: null,
   item_ids: [], min_qty: 0, min_order_value: 0, max_total_uses: null, max_uses_per_user: 1, max_uses_per_phone: 1,
   first_order_only: false, starts_at: null, ends_at: null, days_of_week: null, start_time: '22:00:00', end_time: '02:00:00', is_active: true,
+  created_at: '2026-01-01T00:00:00Z',
 };
 
 describe('form <-> row', () => {
