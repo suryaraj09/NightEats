@@ -1,3 +1,5 @@
+import type { Tables } from './lib/database.types';
+
 export type Category = 'Burger' | 'Sandwich' | 'Tikka Pav' | 'Fries';
 export type Variant = 'reg' | 'cheese';
 
@@ -42,17 +44,8 @@ export interface PlacedOrder {
 
 export type OrderStatus = 'new' | 'confirmed' | 'delivered' | 'cancelled';
 
-export interface OrderRow {
-  id: number;
-  customer_name: string;
-  customer_phone: string;
-  address: string;
-  pincode: string;
-  subtotal: number;
-  discount: number;
-  total: number;
-  coupon_code: string | null;
+/** An order with its lines, as selected by `orders` + `order_items(...)`. status is narrowed to the DB check constraint. */
+export type OrderRow = Omit<Tables<'orders'>, 'status'> & {
   status: OrderStatus;
-  created_at: string;
-  order_items: { id: number; name: string; unit_price: number; qty: number }[];
-}
+  order_items: Pick<Tables<'order_items'>, 'id' | 'name' | 'unit_price' | 'qty'>[];
+};
