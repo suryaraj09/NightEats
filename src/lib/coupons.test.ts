@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { couponErrorText, emptyForm, formFromRow, rowFromForm, summarize, toLocalInput, type CouponForm, type CouponRow } from './coupons';
+import { translator } from '../i18n/translate';
 import type { MenuItem } from '../types';
+
+const gu = translator('gu');
+const en = translator('en');
 
 const form = (patch: Partial<CouponForm>): CouponForm => ({ ...emptyForm, code: 'test10', ...patch });
 const ok = (f: CouponForm) => {
-  const r = rowFromForm(f);
+  const r = rowFromForm(f, gu);
   if ('error' in r) throw new Error(r.error);
   return r.row;
 };
 const err = (f: CouponForm) => {
-  const r = rowFromForm(f);
+  const r = rowFromForm(f, gu);
   return 'error' in r ? r.error : null;
 };
 
@@ -85,9 +89,25 @@ describe('form <-> row', () => {
 describe('summarize', () => {
   const items: MenuItem[] = [{ id: 7, name: 'Salted Fries', category: 'Fries', price: 70, cheesePrice: null, description: '', inStock: true }];
   it('describes the offer and its rules', () => {
-    expect(summarize(row, items)).toBe('Buy 1 Get 1 free · 1/એકાઉન્ટ · 1/નંબર · 22:00-02:00');
-    expect(summarize({ ...row, type: 'free_item', free_item_id: 7, min_order_value: 300, max_uses_per_user: null, max_uses_per_phone: null, start_time: null, end_time: null }, items))
+    expect(summarize(row, items, gu)).toBe('Buy 1 Get 1 free · 1/એકાઉન્ટ · 1/નંબર · 22:00-02:00');
+    expect(summarize({ ...row, type: 'free_item', free_item_id: 7, min_order_value: 300, max_uses_per_user: null, max_uses_per_phone: null, start_time: null, end_time: null }, items, gu))
       .toBe('ફ્રી Salted Fries · min ₹300');
+  });
+});
+
+describe('English', () => {
+  const errEn = (f: CouponForm) => {
+    const r = rowFromForm(f, en);
+    return 'error' in r ? r.error : null;
+  };
+  it('reports form errors in English', () => {
+    expect(errEn(form({ code: 'a b', type: 'flat', flatOff: '5' }))).toBe('The code must be 3-20 characters (A-Z, 0-9, _ or -).');
+    expect(errEn(form({ type: 'flat', flatOff: '5', maxTotalUses: '0' }))).toBe('The total uses limit must be 1 or more (empty = unlimited).');
+  });
+  it('summarizes in English', () => {
+    expect(summarize(row, [], en)).toBe('Buy 1 Get 1 free · 1/account · 1/number · 22:00-02:00');
+    expect(summarize({ ...row, type: 'percent', percent_off: 10, max_discount: 50, days_of_week: [5, 1] }, [], en)).toContain('10% off (max ₹50)');
+    expect(summarize({ ...row, type: 'free_item', free_item_id: 99 }, [], en)).toContain('Free (deleted item)');
   });
 });
 

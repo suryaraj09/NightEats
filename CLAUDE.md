@@ -1,7 +1,7 @@
 # Night Eats
 
 React + TypeScript (Vite) storefront on Supabase (Google login, Postgres, Realtime), deployed on Vercel.
-Customer-facing text is Gujarati. See `README.md` for setup, scripts and how the app works.
+Customer-facing text is Gujarati by default, with an English toggle (all UI strings live in `src/i18n/translate.ts`; never hardcode UI text in components). See `README.md` for setup, scripts and how the app works.
 
 ## Pull Requests
 Do not add a "Generated with Claude Code" footer or attribution line to PR descriptions.
@@ -9,6 +9,7 @@ Do not add a "Generated with Claude Code" footer or attribution line to PR descr
 ## Project layout
 - `src/App.tsx`: top-level state (cart, which dialog is open, checkout gate).
 - `src/components/`: UI. `CartModal` (checkout + coupon box), `AdminModal` with `OrdersTab` / `MenuTab` / `CouponsTab`, `MyOrdersModal`.
+- `src/i18n/`: `translate.ts` (the `gu` + `en` dictionaries and a pure `translate()`), `LanguageProvider.tsx` (`useLang()` → `t`, `lang`, `locale`).
 - `src/hooks/`: Supabase-backed state (`useAuth`, `useMenu`, `useOrders`, `useMyOrders`, `useShop`, `useCoupons`).
 - `src/lib/`: `supabase.ts` (typed client), `database.types.ts` (**generated**, do not edit), `cart.ts`, `coupons.ts` (admin form logic), `persist.ts` (cart survives the Google redirect).
 - `src/types.ts`: app types, derived from the generated database types.

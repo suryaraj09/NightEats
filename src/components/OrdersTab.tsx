@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useLang } from '../i18n/LanguageProvider';
+import type { Key } from '../i18n/translate';
 import type { OrderRow, OrderStatus } from '../types';
 
 interface Props {
@@ -7,17 +9,17 @@ interface Props {
   setStatus: (id: number, status: OrderStatus) => Promise<void>;
 }
 
-export const STATUS_LABEL: Record<OrderStatus, string> = {
-  new: 'નવો',
-  confirmed: 'કન્ફર્મ',
-  delivered: 'ડિલિવર થયો',
-  cancelled: 'રદ',
+export const STATUS_KEY: Record<OrderStatus, Key> = {
+  new: 'status.new',
+  confirmed: 'status.confirmed',
+  delivered: 'status.delivered',
+  cancelled: 'status.cancelled',
 };
 
 // Allowed next steps per status.
-const NEXT: Record<OrderStatus, { to: OrderStatus; label: string; danger?: boolean }[]> = {
-  new: [{ to: 'confirmed', label: '✔ કન્ફર્મ કરો' }, { to: 'cancelled', label: '✖ રદ કરો', danger: true }],
-  confirmed: [{ to: 'delivered', label: '🛵 ડિલિવર થયો' }, { to: 'cancelled', label: '✖ રદ કરો', danger: true }],
+const NEXT: Record<OrderStatus, { to: OrderStatus; label: Key; danger?: boolean }[]> = {
+  new: [{ to: 'confirmed', label: 'orders.actionConfirm' }, { to: 'cancelled', label: 'orders.actionCancel', danger: true }],
+  confirmed: [{ to: 'delivered', label: 'orders.actionDeliver' }, { to: 'cancelled', label: 'orders.actionCancel', danger: true }],
   delivered: [],
   cancelled: [],
 };
@@ -25,6 +27,7 @@ const NEXT: Record<OrderStatus, { to: OrderStatus; label: string; danger?: boole
 const FILTERS: (OrderStatus | 'all')[] = ['all', 'new', 'confirmed', 'delivered', 'cancelled'];
 
 export function OrdersTab({ orders, error, setStatus }: Props) {
+  const { t, locale } = useLang();
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
   const shown = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
 
@@ -33,7 +36,7 @@ export function OrdersTab({ orders, error, setStatus }: Props) {
       <div className="order-filters">
         {FILTERS.map((f) => (
           <button key={f} className={`order-filter ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
-            {f === 'all' ? 'બધા' : STATUS_LABEL[f]}
+            {f === 'all' ? t('orders.filterAll') : t(STATUS_KEY[f])}
             {f !== 'all' && ` (${orders.filter((o) => o.status === f).length})`}
           </button>
         ))}
@@ -41,17 +44,17 @@ export function OrdersTab({ orders, error, setStatus }: Props) {
 
       {error && <div className="pincode-fixed-badge">⚠️ {error}</div>}
       {!error && shown.length === 0 && (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>કોઈ ઓર્ડર નથી.</div>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{t('orders.none')}</div>
       )}
 
       {shown.map((o) => (
         <div key={o.id} className={`order-card ${o.status === 'new' ? 'is-new' : ''}`}>
           <div className="order-head">
             <b>#{o.id}</b>
-            <span className={`order-status s-${o.status}`}>{STATUS_LABEL[o.status]}</span>
+            <span className={`order-status s-${o.status}`}>{t(STATUS_KEY[o.status])}</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-            {new Date(o.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+            {new Date(o.created_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}
           </div>
           <div style={{ fontSize: '0.85rem', marginTop: 4 }}>
             <b>{o.customer_name}</b> ·{' '}
@@ -65,7 +68,7 @@ export function OrdersTab({ orders, error, setStatus }: Props) {
           </ul>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
             <span>
-              કુલ (COD): <span style={{ color: 'var(--gold-primary)' }}>₹{o.total}</span>
+              {t('orders.totalCod')} <span style={{ color: 'var(--gold-primary)' }}>₹{o.total}</span>
               {o.coupon_code && <span className="order-bogo"> {o.coupon_code}{o.discount > 0 ? ` -₹${o.discount}` : ''}</span>}
             </span>
           </div>
@@ -76,10 +79,10 @@ export function OrdersTab({ orders, error, setStatus }: Props) {
                   key={n.to}
                   className={`order-action ${n.danger ? 'danger' : ''}`}
                   onClick={() => {
-                    if (n.to !== 'cancelled' || confirm(`ઓર્ડર #${o.id} રદ કરવો છે?`)) void setStatus(o.id, n.to);
+                    if (n.to !== 'cancelled' || confirm(t('orders.cancelConfirm', { id: o.id }))) void setStatus(o.id, n.to);
                   }}
                 >
-                  {n.label}
+                  {t(n.label)}
                 </button>
               ))}
             </div>
