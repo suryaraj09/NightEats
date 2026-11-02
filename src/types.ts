@@ -29,6 +29,8 @@ export interface Profile {
   email: string | null;
   name: string | null;
   phone: string | null;
+  /** Last delivery address, remembered so returning customers don't retype it. */
+  address: string | null;
 }
 
 export interface PlacedOrder {

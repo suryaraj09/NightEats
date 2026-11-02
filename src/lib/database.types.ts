@@ -121,14 +121,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"email": string | null,"id": string,"name": string | null,"phone": string | null,"updated_at": string
+                    "address": string | null,"created_at": string,"email": string | null,"id": string,"name": string | null,"phone": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"email"?: string | null,"id": string,"name"?: string | null,"phone"?: string | null,"updated_at"?: string
+                    "address"?: string | null,"created_at"?: string,"email"?: string | null,"id": string,"name"?: string | null,"phone"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"email"?: string | null,"id"?: string,"name"?: string | null,"phone"?: string | null,"updated_at"?: string
+                    "address"?: string | null,"created_at"?: string,"email"?: string | null,"id"?: string,"name"?: string | null,"phone"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     

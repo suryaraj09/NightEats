@@ -19,7 +19,7 @@ interface Props {
 type Feedback = { text: string; color: string } | null;
 
 export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile }: Props) {
-  const { profile } = useAuth();
+  const { profile, saveAddress } = useAuth();
   const { t } = useLang();
   const [address, setAddress] = useState('');
   const [code, setCode] = useState('');
@@ -33,6 +33,12 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
   const final = Math.max(0, subtotal - discount);
   const orderItems = Object.values(cart).map((l) => ({ menu_item_id: l.itemId, variant: l.variant, qty: l.qty }));
   const itemsKey = JSON.stringify(orderItems);
+
+  // Returning customers: fill in the address saved on their profile (they can still edit it).
+  const savedAddress = profile?.address ?? '';
+  useEffect(() => {
+    if (open && savedAddress) setAddress((a) => a || savedAddress);
+  }, [open, savedAddress]);
 
   // Forget the confirmation once the modal is closed by any route.
   useEffect(() => {
@@ -103,6 +109,7 @@ export function CartModal({ open, cart, onClose, onQty, onOrdered, onEditProfile
       );
     }
     setPlaced({ order, address: address.trim() });
+    void saveAddress(address);
     setAddress('');
     setApplied(null);
     setCode('');

@@ -157,7 +157,11 @@ select throws_ok($$update public.profiles set email = 'admin@example.com' where 
 select throws_ok($$update public.profiles set created_at = now() - interval '1 year' where id = auth.uid()$$, '42501', null, 'a user cannot change created_at');
 select is(pg_temp.rows_changed($q$update public.profiles set name = 'Hacked' where id <> auth.uid()$q$), 0, 'a user cannot edit someone else''s profile');
 select is((select count(*)::int from public.profiles), 1, 'a user reads only their own profile');
-select throws_ok($$update public.profiles set name = repeat('a', 101) where id = auth.uid()$$, '23514', null, 'names over 100 chars are refused');
+select throws_ok($update public.profiles set name = repeat('a', 101) where id = auth.uid()$, '23514', null, 'names over 100 chars are refused');
+select lives_ok($update public.profiles set address = '12 Test Society, Vasna' where id = auth.uid()$, 'a user can save their delivery address');
+select is((select address from public.profiles where id = auth.uid()), '12 Test Society, Vasna', 'the saved address is read back from the profile');
+select throws_ok($update public.profiles set address = repeat('a', 301) where id = auth.uid()$, '23514', null, 'addresses over 300 chars are refused');
+select is(pg_temp.rows_changed($q$update public.profiles set address = 'Hacked' where id <> auth.uid()$q$), 0, 'a user cannot change someone else''s address');
 
 ------------------------------------------------------------------ admin check
 select pg_temp.as_user(:'admin');
