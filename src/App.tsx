@@ -14,11 +14,10 @@ import { useMenu } from './hooks/useMenu';
 import { useShop } from './hooks/useShop';
 import { useLang } from './i18n/LanguageProvider';
 import { cartTotals } from './lib/cart';
+import { afterLogin, isAuthDialog, type Dialog } from './lib/loginFlow';
 import { loadCart, loadIntent, saveCart, saveIntent } from './lib/persist';
 import { supabaseConfigured } from './lib/supabase';
 import type { Cart, MenuItem, Variant } from './types';
-
-type Dialog = 'none' | 'auth' | 'profile' | 'cart' | 'adminAuth' | 'admin' | 'myOrders';
 
 export default function App() {
   const auth = useAuth();
@@ -42,7 +41,7 @@ export default function App() {
   useEffect(() => {
     if (closed && dialog === 'cart') setDialog('none');
   }, [closed, dialog]);
-  useEffect(() => saveIntent(dialog === 'auth' || dialog === 'adminAuth' ? dialog : null), [dialog]);
+  useEffect(() => saveIntent(isAuthDialog(dialog) ? (dialog as 'auth' | 'checkoutAuth' | 'adminAuth') : null), [dialog]);
 
   const visible = useMemo(
     () => (category === 'All' ? menu.items : menu.items.filter((i) => i.category === category)),
@@ -74,7 +73,7 @@ export default function App() {
   // Checkout gate: must be logged in, then must have name + phone on file.
   const startCheckout = () => {
     if (closed) return setNoticeDismissed(false);
-    if (!auth.session) return setDialog('auth');
+    if (!auth.session) return setDialog('checkoutAuth');
     if (!auth.profileComplete) return setDialog('profile');
     setDialog('cart');
   };
@@ -85,17 +84,16 @@ export default function App() {
     alert(t('app.adminDenied'));
   };
 
-  // Continue where the user was heading once login (or the admin check) completes.
+  // Once login (and the profile/admin lookup) completes, close the sign-in prompt and continue where the user was heading.
   useEffect(() => {
     if (!auth.session || !auth.ready) return;
-    if (dialog === 'auth') startCheckout();
-    else if (dialog === 'adminAuth' && auth.isAdmin) setDialog('admin');
-    else if (dialog === 'adminAuth') {
-      setDialog('none');
-      alert(t('app.adminDenied'));
-    }
+    const next = afterLogin(dialog, { isAdmin: auth.isAdmin, shopClosed: closed, profileComplete: auth.profileComplete });
+    if (!next) return;
+    setDialog(next.dialog);
+    if (next.adminDenied) alert(t('app.adminDenied'));
+    if (closed && dialog === 'checkoutAuth') setNoticeDismissed(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.session, auth.ready, auth.isAdmin, auth.profileComplete]);
+  }, [auth.session, auth.ready, auth.isAdmin, auth.profileComplete, dialog]);
 
   return (
     <>
@@ -126,7 +124,7 @@ export default function App() {
         <button className="btn-primary-action" onClick={() => setNoticeDismissed(true)}>{t('shop.viewMenu')}</button>
       </Modal>
 
-      <AuthModal open={dialog === 'auth'} onClose={() => setDialog('none')} />
+      <AuthModal open={(dialog === 'auth' || dialog === 'checkoutAuth') && !auth.session} onClose={() => setDialog('none')} />
       <MyOrdersModal open={dialog === 'myOrders'} onClose={() => setDialog('none')} />
       <ProfileModal
         open={dialog === 'profile'}
@@ -143,7 +141,7 @@ export default function App() {
       />
 
       <AuthModal
-        open={dialog === 'adminAuth'}
+        open={dialog === 'adminAuth' && !auth.session}
         onClose={() => setDialog('none')}
         title={t('app.adminLogin')}
       />

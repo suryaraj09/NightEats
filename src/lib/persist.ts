@@ -4,7 +4,7 @@ const CART_KEY = 'nighteats.cart';
 const INTENT_KEY = 'nighteats.intent';
 
 /** Where the user was heading when the Google redirect reloaded the page. */
-export type Intent = 'auth' | 'adminAuth';
+export type Intent = 'auth' | 'checkoutAuth' | 'adminAuth';
 
 // Storage can throw (private mode, blocked site data), so every access is guarded.
 function read(store: 'local' | 'session', key: string): string | null {
@@ -52,7 +52,7 @@ export function saveCart(cart: Cart) {
 
 export function loadIntent(): Intent | null {
   const v = read('session', INTENT_KEY);
-  return v === 'auth' || v === 'adminAuth' ? v : null;
+  return v === 'auth' || v === 'checkoutAuth' || v === 'adminAuth' ? v : null;
 }
 
 export function saveIntent(intent: Intent | null) {
