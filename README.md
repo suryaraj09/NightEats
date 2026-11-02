@@ -133,6 +133,11 @@ The schema lives only in `supabase/migrations/`, as numbered files applied in or
   The cart previews the discount with `validate_coupon()`; `place_order()` enforces every rule again. `BOGO1ST` is just a
   coupon (buy 1 get 1 free, once per account and per phone). Editing or deleting a coupon never changes past orders.
   The "BOGO OFFER" banner in the header is plain text; update it if you switch `BOGO1ST` off.
+- **Languages:** the whole UI is available in Gujarati (default) and English. Customers switch with the ગુજરાતી | English
+  toggle in the header; the choice is remembered in the browser (`localStorage`). All UI text lives in
+  `src/i18n/translate.ts`: add a key to `gu` and the compiler makes you add it to `en` too (`npm test` also checks that
+  both languages have the same keys and placeholders). Not translated: menu item names/descriptions and coupon descriptions
+  (the owner types them), and the reason text the server returns for a rejected coupon.
 - The owner sees new orders live in the Orders tab (badge and beep) and can open or close the shop; while closed,
   customers can browse but not order.
 

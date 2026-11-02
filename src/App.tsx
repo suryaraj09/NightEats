@@ -12,6 +12,7 @@ import { ProfileModal } from './components/ProfileModal';
 import { useAuth } from './hooks/useAuth';
 import { useMenu } from './hooks/useMenu';
 import { useShop } from './hooks/useShop';
+import { useLang } from './i18n/LanguageProvider';
 import { cartTotals } from './lib/cart';
 import { loadCart, loadIntent, saveCart, saveIntent } from './lib/persist';
 import { supabaseConfigured } from './lib/supabase';
@@ -23,6 +24,7 @@ export default function App() {
   const auth = useAuth();
   const menu = useMenu();
   const shop = useShop();
+  const { t } = useLang();
   const closed = !shop.isOpen;
   const [noticeDismissed, setNoticeDismissed] = useState(false);
   const [category, setCategory] = useState<ActiveCategory>('All');
@@ -80,7 +82,7 @@ export default function App() {
   const openAdmin = () => {
     if (!auth.session) return setDialog('adminAuth');
     if (auth.isAdmin) return setDialog('admin');
-    alert('❌ આ એકાઉન્ટને માલિક એક્સેસ નથી.');
+    alert(t('app.adminDenied'));
   };
 
   // Continue where the user was heading once login (or the admin check) completes.
@@ -90,7 +92,7 @@ export default function App() {
     else if (dialog === 'adminAuth' && auth.isAdmin) setDialog('admin');
     else if (dialog === 'adminAuth') {
       setDialog('none');
-      alert('❌ આ એકાઉન્ટને માલિક એક્સેસ નથી.');
+      alert(t('app.adminDenied'));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.session, auth.ready, auth.isAdmin, auth.profileComplete]);
@@ -102,13 +104,13 @@ export default function App() {
 
       <main className={`menu-container ${closed ? 'shop-closed' : ''}`}>
         {!supabaseConfigured && (
-          <div className="pincode-fixed-badge">⚠️ Supabase env vars missing — set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.</div>
+          <div className="pincode-fixed-badge">{t('app.supabaseMissing')}</div>
         )}
         {closed && (
-          <div className="shop-closed-banner">🔴 શોપ હજી ખુલી નથી{shop.note ? ` — ${shop.note}` : ''}</div>
+          <div className="shop-closed-banner">{t('shop.closedBanner')}{shop.note ? ` — ${shop.note}` : ''}</div>
         )}
-        {menu.error && <div className="pincode-fixed-badge">⚠️ મેનૂ લોડ થઈ શક્યું નથી: {menu.error}</div>}
-        {menu.loading && <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>લોડ થઈ રહ્યું છે...</div>}
+        {menu.error && <div className="pincode-fixed-badge">{t('app.menuLoadFailed', { error: menu.error })}</div>}
+        {menu.loading && <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>{t('app.loading')}</div>}
         {visible.map((item) => (
           <MenuCard key={item.id} item={item} cart={cart} onAdd={addToCart} onQty={updateQty} />
         ))}
@@ -116,12 +118,12 @@ export default function App() {
 
       <CartBar items={cartCount} total={subtotal} onOpen={startCheckout} disabled={closed} />
 
-      <Modal open={closed && !noticeDismissed && dialog === 'none'} title="🔴 શોપ હજી ખુલી નથી" onClose={() => setNoticeDismissed(true)}>
+      <Modal open={closed && !noticeDismissed && dialog === 'none'} title={t('shop.closedTitle')} onClose={() => setNoticeDismissed(true)}>
         <div style={{ fontSize: '0.9rem' }}>
-          અમે હાલમાં ઓર્ડર લઈ રહ્યા નથી. તમે મેનૂ જોઈ શકો છો, પણ શોપ ખુલે ત્યાં સુધી ઓર્ડર આપી શકશો નહીં.
+          {t('shop.closedBody')}
         </div>
         {shop.note && <div style={{ fontWeight: 700, color: 'var(--gold-primary)' }}>{shop.note}</div>}
-        <button className="btn-primary-action" onClick={() => setNoticeDismissed(true)}>મેનૂ જુઓ</button>
+        <button className="btn-primary-action" onClick={() => setNoticeDismissed(true)}>{t('shop.viewMenu')}</button>
       </Modal>
 
       <AuthModal open={dialog === 'auth'} onClose={() => setDialog('none')} />
@@ -143,14 +145,14 @@ export default function App() {
       <AuthModal
         open={dialog === 'adminAuth'}
         onClose={() => setDialog('none')}
-        title="માલિક એક્સેસ (Admin Login)"
+        title={t('app.adminLogin')}
       />
       <AdminModal open={dialog === 'admin'} onClose={() => setDialog('none')} items={menu.items} reload={menu.reload} shop={shop} />
 
       <footer>
         <p>© 2026 NIGHT EATS - PURE VEG BURGER CAFÉ</p>
-        <p style={{ marginTop: 4 }}>ઓર્ડર કોલ: +91 7202806140 | વાસણા, અમદાવાદ</p>
-        <span className="admin-link" onClick={openAdmin}>માલિક પોર્ટલ (Admin Menu Manager)</span>
+        <p style={{ marginTop: 4 }}>{t('footer.call')}</p>
+        <span className="admin-link" onClick={openAdmin}>{t('footer.admin')}</span>
       </footer>
     </>
   );

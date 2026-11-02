@@ -90,6 +90,35 @@ header {
     font-weight: 600;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lang-toggle {
+    display: flex;
+    border: 1px solid var(--gold-primary);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.lang-toggle button {
+    background: transparent;
+    border: 0;
+    color: var(--gold-primary);
+    padding: 7px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.lang-toggle button.active {
+    background: var(--gold-primary);
+    color: #000;
+}
+
 .banner-strip {
     background: linear-gradient(90deg, #1f2735 0%, #2f2214 50%, #1f2735 100%);
     border-top: 1px solid rgba(212, 175, 55, 0.3);

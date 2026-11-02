@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import { useAuth } from '../hooks/useAuth';
+import { useLang } from '../i18n/LanguageProvider';
 
 interface Props {
   open: boolean;
@@ -10,6 +11,7 @@ interface Props {
 
 export function ProfileModal({ open, onClose, onSaved }: Props) {
   const { profile, saveProfile } = useAuth();
+  const { t } = useLang();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -24,38 +26,38 @@ export function ProfileModal({ open, onClose, onSaved }: Props) {
   }, [open, profile]);
 
   const submit = async () => {
-    if (name.trim().length < 2) return setError('કૃપા કરીને તમારું પૂરું નામ લખો.');
-    if (!/^[0-9]{10}$/.test(phone)) return setError('કૃપા કરીને સાચો 10 આંકડાનો મોબાઈલ નંબર દાખલ કરો!');
+    if (name.trim().length < 2) return setError(t('profile.errName'));
+    if (!/^[0-9]{10}$/.test(phone)) return setError(t('profile.errPhone'));
     setBusy(true);
     const err = await saveProfile(name, phone);
     setBusy(false);
-    if (err) return setError(err === 'PHONE_FORMAT' ? 'મોબાઈલ નંબર 10 આંકડાનો હોવો જોઈએ.' : err);
+    if (err) return setError(err === 'PHONE_FORMAT' ? t('profile.errPhoneFormat') : err);
     onSaved?.();
     onClose();
   };
 
   return (
-    <Modal open={open} title="તમારી વિગતો (Contact Details)" onClose={onClose}>
+    <Modal open={open} title={t('profile.title')} onClose={onClose}>
       <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-        ઓર્ડર કન્ફર્મ કરવા અમે આ નંબર પર સંપર્ક કરીશું.
+        {t('profile.intro')}
       </div>
       <div className="input-group">
-        <label>ગ્રાહકનું પૂરું નામ *</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="દા.ત. રમેશભાઈ પટેલ" />
+        <label>{t('field.name')}</label>
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('profile.namePlaceholder')} />
       </div>
       <div className="input-group">
-        <label>મોબાઈલ નંબર (10 આંકડા) *</label>
+        <label>{t('field.phone')}</label>
         <input
           type="tel"
           inputMode="numeric"
           maxLength={10}
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-          placeholder="દા.ત. 9876543210"
+          placeholder={t('profile.phonePlaceholder')}
         />
       </div>
       {error && <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--danger)' }}>{error}</div>}
-      <button className="btn-primary-action" disabled={busy} onClick={() => void submit()}>સેવ કરો</button>
+      <button className="btn-primary-action" disabled={busy} onClick={() => void submit()}>{t('profile.save')}</button>
     </Modal>
   );
 }

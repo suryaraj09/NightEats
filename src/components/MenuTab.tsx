@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLang } from '../i18n/LanguageProvider';
 import { supabase } from '../lib/supabase';
 import type { Category, MenuItem } from '../types';
 
@@ -15,6 +16,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
 ];
 
 export function MenuTab({ items, reload }: Props) {
+  const { t } = useLang();
   const [name, setName] = useState('');
   const [category, setCategory] = useState<Category>('Burger');
   const [price, setPrice] = useState('');
@@ -48,9 +50,9 @@ export function MenuTab({ items, reload }: Props) {
   };
 
   const save = async () => {
-    if (!name.trim()) return alert('કૃપા કરીને વાનગીનું નામ દાખલ કરો!');
-    if (!isMoney(price)) return alert('ભાવ ૦ કે તેથી વધુનો પૂર્ણ આંકડો હોવો જોઈએ!');
-    if (cheesePrice.trim() && !isMoney(cheesePrice)) return alert('ડબલ ચીઝ ભાવ ૦ કે તેથી વધુનો પૂર્ણ આંકડો હોવો જોઈએ!');
+    if (!name.trim()) return alert(t('menuTab.nameRequired'));
+    if (!isMoney(price)) return alert(t('menuTab.priceBad'));
+    if (cheesePrice.trim() && !isMoney(cheesePrice)) return alert(t('menuTab.cheeseBad'));
     const fields = {
       name: name.trim(),
       category,
@@ -70,74 +72,74 @@ export function MenuTab({ items, reload }: Props) {
     );
     if (ok) {
       clearForm();
-      alert('નવી વાનગી સફળતાપૂર્વક ઉમેરાઈ ગઈ છે!');
+      alert(t('menuTab.added'));
     }
   };
 
   const toggle = (i: MenuItem) => run(supabase.from('menu_items').update({ in_stock: !i.inStock }).eq('id', i.id));
   const remove = (i: MenuItem) => {
-    if (!confirm('શું તમે આ વાનગીને લાઈવ મેનૂમાંથી કાયમ માટે કાઢી નાખવા માંગો છો?')) return;
+    if (!confirm(t('menuTab.removeConfirm'))) return;
     if (editing?.id === i.id) clearForm();
     void run(supabase.from('menu_items').delete().eq('id', i.id));
   };
   const reset = () => {
-    if (confirm('શું તમે ઓરિજિનલ મેનૂ ફરીથી રીસ્ટોર કરવા માંગો છો?')) void run(supabase.rpc('reset_menu'));
+    if (confirm(t('menuTab.resetConfirm'))) void run(supabase.rpc('reset_menu'));
   };
 
   return (
     <>
       <h4 style={{ color: 'var(--gold-primary)', fontSize: '0.9rem' }}>
-        {editing ? `✏️ એડિટ કરો: ${editing.name}` : '+ નવી આઇટમ ઉમેરો'}
+        {editing ? t('menuTab.editTitle', { name: editing.name }) : t('menuTab.newTitle')}
       </h4>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <div className="input-group">
-          <label>વાનગીનું નામ</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="દા.ત. Peri Peri Burger" />
+          <label>{t('menuTab.nameLabel')}</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('menuTab.namePlaceholder')} />
         </div>
         <div className="input-group">
-          <label>કેટેગરી</label>
+          <label>{t('menuTab.categoryLabel')}</label>
           <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
             {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </div>
         <div className="input-group">
-          <label>ભાવ (₹)</label>
-          <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="દા.ત. 120" />
+          <label>{t('menuTab.priceLabel')}</label>
+          <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={t('menuTab.pricePlaceholder')} />
         </div>
         <div className="input-group">
-          <label>ડબલ ચીઝ ભાવ (વૈકલ્પિક)</label>
-          <input type="number" value={cheesePrice} onChange={(e) => setCheesePrice(e.target.value)} placeholder="દા.ત. 140" />
+          <label>{t('menuTab.cheeseLabel')}</label>
+          <input type="number" value={cheesePrice} onChange={(e) => setCheesePrice(e.target.value)} placeholder={t('menuTab.cheesePlaceholder')} />
         </div>
       </div>
       <div className="input-group">
-        <label>વર્ણન (વૈકલ્પિક)</label>
+        <label>{t('menuTab.descLabel')}</label>
         <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={DEFAULT_DESC} />
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button className="btn-primary-action" style={{ padding: 8 }} onClick={() => void save()}>
-          {editing ? 'ફેરફાર સાચવો' : 'લાઇવ મેનૂમાં ઉમેરો'}
+          {editing ? t('menuTab.saveEdit') : t('menuTab.saveNew')}
         </button>
         {editing && (
-          <button className="btn-add-item" onClick={clearForm}>રદ કરો</button>
+          <button className="btn-add-item" onClick={clearForm}>{t('menuTab.cancel')}</button>
         )}
       </div>
 
       <hr style={{ border: 0, borderTop: '1px solid var(--border-subtle)', margin: '10px 0' }} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h4 style={{ color: 'var(--gold-primary)', fontSize: '0.9rem' }}>લાઇવ સ્ટોક કંટ્રોલ (ક્લાઉડ સિન્ક)</h4>
+        <h4 style={{ color: 'var(--gold-primary)', fontSize: '0.9rem' }}>{t('menuTab.stockTitle')}</h4>
         <button
           style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '4px 8px', borderRadius: 6, fontSize: '0.7rem', cursor: 'pointer' }}
           onClick={reset}
         >
-          મૂળ મેનૂ રીસ્ટોર
+          {t('menuTab.restore')}
         </button>
       </div>
 
       <div style={{ maxHeight: 350, overflowY: 'auto' }}>
         <table className="admin-table">
           <thead>
-            <tr><th>વાનગી</th><th>ભાવ</th><th>લાઈવ સ્ટોક</th><th>એડિટ</th><th>કાઢી નાખો</th></tr>
+            <tr><th>{t('menuTab.thDish')}</th><th>{t('menuTab.thPrice')}</th><th>{t('menuTab.thStock')}</th><th>{t('menuTab.thEdit')}</th><th>{t('menuTab.thDelete')}</th></tr>
           </thead>
           <tbody>
             {items.map((i) => (

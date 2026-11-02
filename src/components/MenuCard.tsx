@@ -1,3 +1,4 @@
+import { useLang } from '../i18n/LanguageProvider';
 import type { Cart, MenuItem, Variant } from '../types';
 
 interface Props {
@@ -8,7 +9,8 @@ interface Props {
 }
 
 function Stepper({ qty, onAdd, onQty }: { qty: number; onAdd: () => void; onQty: (d: number) => void }) {
-  if (qty === 0) return <button className="btn-add-item" onClick={onAdd}>+ ADD</button>;
+  const { t } = useLang();
+  if (qty === 0) return <button className="btn-add-item" onClick={onAdd}>{t('menu.add')}</button>;
   return (
     <div className="qty-control">
       <button className="qty-btn" onClick={() => onQty(-1)}>-</button>
@@ -28,6 +30,7 @@ const rowStyle = {
 } as const;
 
 export function MenuCard({ item, cart, onAdd, onQty }: Props) {
+  const { t } = useLang();
   const hasCheese = item.cheesePrice !== null;
   const keyReg = `${item.id}_reg`;
   const keyCheese = `${item.id}_cheese`;
@@ -54,7 +57,7 @@ export function MenuCard({ item, cart, onAdd, onQty }: Props) {
 
       {!item.inStock ? (
         <div style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 700, marginTop: 8 }}>
-          ❌ SOLD OUT (હાલમાં સ્ટોક ખલાસ છે)
+          {t('menu.soldOut')}
         </div>
       ) : hasCheese ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
@@ -69,7 +72,7 @@ export function MenuCard({ item, cart, onAdd, onQty }: Props) {
         </div>
       ) : (
         <div className="action-row">
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>પ્યોર વેજ તાજો સ્વાદ</span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('menu.pureVeg')}</span>
           <Stepper qty={qtyReg} onAdd={() => onAdd(item, 'reg')} onQty={(d) => onQty(keyReg, d)} />
         </div>
       )}
