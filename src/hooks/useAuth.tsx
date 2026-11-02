@@ -14,6 +14,8 @@ interface AuthState {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   saveProfile: (name: string, phone: string) => Promise<string | null>;
+  /** Remember the delivery address for next time. Best effort: a failure never blocks an order. */
+  saveAddress: (address: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -33,10 +35,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     setReady(false);
-    const [{ data: p }, { data: admin }] = await Promise.all([
-      supabase.from('profiles').select('id,email,name,phone').eq('id', s.user.id).maybeSingle(),
+    const [withAddress, { data: admin }] = await Promise.all([
+      supabase.from('profiles').select('id,email,name,phone,address').eq('id', s.user.id).maybeSingle(),
       supabase.rpc('is_admin'),
     ]);
+    let p: Partial<Profile> | null = withAddress.data;
+    if (withAddress.error) {
+      // Migration 0005 (profiles.address) not applied yet: load the profile without it rather than losing it.
+      const fallback = await supabase.from('profiles').select('id,email,name,phone').eq('id', s.user.id).maybeSingle();
+      p = fallback.data ? { ...fallback.data, address: null } : null;
+    }
     setProfile((p as Profile | null) ?? null);
     setIsAdmin(admin === true);
     setReady(true);
@@ -80,6 +88,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) return error.code === '23514' ? 'PHONE_FORMAT' : error.message;
       await loadUserData(session);
       return null;
+    },
+    saveAddress: async (address) => {
+      if (!session) return;
+      const clean = address.trim();
+      if (!clean || clean === profile?.address) return;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ address: clean, updated_at: new Date().toISOString() })
+        .eq('id', session.user.id);
+      if (!error) setProfile((p) => (p ? { ...p, address: clean } : p));
     },
   };
 
